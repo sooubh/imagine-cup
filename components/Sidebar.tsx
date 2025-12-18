@@ -10,7 +10,7 @@ const navItems = [
   { name: 'Reorder', href: '/reorder', icon: RefreshCw },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -51,13 +51,13 @@ export function Sidebar() {
       </nav>
       <div className="border-t border-slate-200 p-4">
         <div className="flex items-center gap-3 rounded-lg bg-indigo-600 p-3 text-white shadow-md">
-           <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
-             JD
-           </div>
-           <div className="text-xs">
-             <p className="font-semibold">John Doe</p>
-             <p className="text-indigo-200">Admin</p>
-           </div>
+          <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
+            JD
+          </div>
+          <div className="text-xs">
+            <p className="font-semibold">John Doe</p>
+            <p className="text-indigo-200">Admin</p>
+          </div>
         </div>
       </div>
     </div>
