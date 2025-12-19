@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, Activity, Truck, Users } from 'lucide-react';
 
 export default function LoginPage() {
   return (
@@ -8,7 +7,7 @@ export default function LoginPage() {
         {/* Left Pane: Visual Storytelling */}
         <div className="relative w-full lg:w-1/2 bg-surface-light dark:bg-[#1a190b] flex flex-col justify-between p-8 lg:p-12 overflow-hidden group">
           {/* Background Image */}
-          <div className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 transition-transform duration-700 group-hover:scale-105" data-alt="Drone delivering medical supplies box in rural landscape" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDy0rLT2bCiMsNzUQn7wQB3sh3iHEU5ZD8PhuwH6SlYTT1g76j7_Dz38pTyTscUqDtiJ4dZ9I2xPxL2bMTyi_W5Fp8PrRGzbd43N2zVTiFkFwh7h0mPt9EIFy_kzxwFgPZLGXAsK-PAZ4xZ2lVpKd9vbrkPnKO_n2lzOa_dbBwJx-YaMEoMgjb50zQpxPaY6Cy_nbpj7uKW3ANI3VdQLb2Z9_ub195dKH63RMrNSQMcct-K05qwR9ad5WX8eziLXZSW0Ft1OnL0cUo')"}}>
+          <div className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 transition-transform duration-700 group-hover:scale-105" data-alt="Drone delivering medical supplies box in rural landscape" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDy0rLT2bCiMsNzUQn7wQB3sh3iHEU5ZD8PhuwH6SlYTT1g76j7_Dz38pTyTscUqDtiJ4dZ9I2xPxL2bMTyi_W5Fp8PrRGzbd43N2zVTiFkFwh7h0mPt9EIFy_kzxwFgPZLGXAsK-PAZ4xZ2lVpKd9vbrkPnKO_n2lzOa_dbBwJx-YaMEoMgjb50zQpxPaY6Cy_nbpj7uKW3ANI3VdQLb2Z9_ub195dKH63RMrNSQMcct-K05qwR9ad5WX8eziLXZSW0Ft1OnL0cUo')" }}>
           </div>
           {/* Dark Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>

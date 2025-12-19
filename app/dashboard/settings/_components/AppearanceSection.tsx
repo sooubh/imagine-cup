@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useTheme } from 'next-themes';
+import { useDensity } from '@/app/providers';
 
 export function AppearanceSection() {
-    const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
-    const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
+    const { theme, setTheme } = useTheme();
+    const { density, setDensity } = useDensity();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        // eslint-disable-next-line
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return null;
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -18,36 +30,36 @@ export function AppearanceSection() {
                         className={clsx(
                             'flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all',
                             theme === 'light'
-                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/10'
-                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                                : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                         )}
                     >
-                        <Sun className={clsx("h-8 w-8 mb-3", theme === 'light' ? 'text-indigo-600' : 'text-slate-500')} />
-                        <span className={clsx("font-medium", theme === 'light' ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300')}>Light</span>
+                        <Sun className={clsx("h-8 w-8 mb-3", theme === 'light' ? 'text-primary' : 'text-neutral-500')} />
+                        <span className={clsx("font-medium", theme === 'light' ? 'text-primary-dark dark:text-primary-light' : 'text-neutral-700 dark:text-neutral-300')}>Light</span>
                     </button>
                     <button
                         onClick={() => setTheme('dark')}
                         className={clsx(
                             'flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all',
                             theme === 'dark'
-                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/10'
-                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                                : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                         )}
                     >
-                        <Moon className={clsx("h-8 w-8 mb-3", theme === 'dark' ? 'text-indigo-600' : 'text-slate-500')} />
-                        <span className={clsx("font-medium", theme === 'dark' ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300')}>Dark</span>
+                        <Moon className={clsx("h-8 w-8 mb-3", theme === 'dark' ? 'text-primary' : 'text-neutral-500')} />
+                        <span className={clsx("font-medium", theme === 'dark' ? 'text-primary-dark dark:text-primary-light' : 'text-neutral-700 dark:text-neutral-300')}>Dark</span>
                     </button>
                     <button
                         onClick={() => setTheme('system')}
                         className={clsx(
                             'flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all',
                             theme === 'system'
-                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/10'
-                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                                : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                         )}
                     >
-                        <Monitor className={clsx("h-8 w-8 mb-3", theme === 'system' ? 'text-indigo-600' : 'text-slate-500')} />
-                        <span className={clsx("font-medium", theme === 'system' ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300')}>System</span>
+                        <Monitor className={clsx("h-8 w-8 mb-3", theme === 'system' ? 'text-primary' : 'text-neutral-500')} />
+                        <span className={clsx("font-medium", theme === 'system' ? 'text-primary-dark dark:text-primary-light' : 'text-neutral-700 dark:text-neutral-300')}>System</span>
                     </button>
                 </div>
             </div>
@@ -55,27 +67,33 @@ export function AppearanceSection() {
             <div>
                 <h4 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">Content Density</h4>
                 <div className="flex gap-4">
-                    <label className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer w-full hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <label className={clsx(
+                        "flex items-center gap-3 p-4 border rounded-lg cursor-pointer w-full transition-colors",
+                        density === 'comfortable' ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                    )}>
                         <input
                             type="radio"
                             name="density"
                             value="comfortable"
                             checked={density === 'comfortable'}
                             onChange={() => setDensity('comfortable')}
-                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                            className="w-4 h-4 text-primary focus:ring-primary border-neutral-300"
                         />
-                        <span className="text-slate-700 dark:text-slate-300 font-medium">Comfortable</span>
+                        <span className="text-neutral-700 dark:text-neutral-300 font-medium">Comfortable</span>
                     </label>
-                    <label className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer w-full hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <label className={clsx(
+                        "flex items-center gap-3 p-4 border rounded-lg cursor-pointer w-full transition-colors",
+                        density === 'compact' ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                    )}>
                         <input
                             type="radio"
                             name="density"
                             value="compact"
                             checked={density === 'compact'}
                             onChange={() => setDensity('compact')}
-                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                            className="w-4 h-4 text-primary focus:ring-primary border-neutral-300"
                         />
-                        <span className="text-slate-700 dark:text-slate-300 font-medium">Compact</span>
+                        <span className="text-neutral-700 dark:text-neutral-300 font-medium">Compact</span>
                     </label>
                 </div>
             </div>
