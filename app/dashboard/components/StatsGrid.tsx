@@ -1,6 +1,45 @@
+'use client';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import stockData from '@/data/sampleStockData.json';
+import { filterStockData, getStockStatus } from '../lib/utils';
+import { useMemo } from 'react';
 
 export function StatsGrid() {
+  const searchParams = useSearchParams();
+
+  const stats = useMemo(() => {
+    const filters = {
+      dateRange: searchParams.get('dateRange') || '7d',
+      category: searchParams.get('category') || 'all',
+      status: searchParams.get('status') || 'all',
+      location: searchParams.get('location') || 'all',
+      view: searchParams.get('view') || 'district',
+    };
+
+    const filtered = filterStockData(stockData, filters);
+
+    // Metrics calculation
+    const totalItems = filtered.length;
+    const itemsAtRisk = filtered.filter(i => {
+      const s = getStockStatus(i.closing_stock, i.opening_stock);
+      return s === 'critical' || s === 'low';
+    }).length;
+
+    const avgDayStockVal = filtered.reduce((acc, curr) => {
+      const days = curr.avg_daily_issue > 0 ? curr.closing_stock / curr.avg_daily_issue : 0;
+      return acc + days;
+    }, 0);
+    const avgDaysStock = totalItems > 0 ? Math.round(avgDayStockVal / totalItems) : 0;
+
+    return {
+      totalItems,
+      itemsAtRisk,
+      avgDaysStock
+    };
+  }, [searchParams]);
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <Link href="/reports" className="group bg-white dark:bg-[#2a2912] p-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 block">
@@ -9,7 +48,7 @@ export function StatsGrid() {
           <span className="material-symbols-outlined text-neutral-400 group-hover:text-primary transition-colors">inventory_2</span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">1,240</span>
+          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.totalItems.toLocaleString()}</span>
           <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">+5%</span>
         </div>
       </Link>
@@ -21,7 +60,7 @@ export function StatsGrid() {
           <span className="material-symbols-outlined text-orange-500">warning</span>
         </div>
         <div className="flex items-baseline gap-2 relative z-10">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">12</span>
+          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.itemsAtRisk}</span>
           <span className="text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">+2 items</span>
         </div>
       </Link>
@@ -32,7 +71,7 @@ export function StatsGrid() {
           <span className="material-symbols-outlined text-neutral-400">calendar_today</span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">18 <span className="text-lg font-normal text-neutral-500">Days</span></span>
+          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.avgDaysStock} <span className="text-lg font-normal text-neutral-500">Days</span></span>
           <span className="text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">-2 days</span>
         </div>
       </div>
@@ -50,3 +89,4 @@ export function StatsGrid() {
     </div>
   );
 }
+

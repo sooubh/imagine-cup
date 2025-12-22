@@ -1,4 +1,40 @@
+'use client';
+
+import { useSearchParams } from 'next/navigation';
+import { useMemo } from 'react';
+import stockData from '@/data/sampleStockData.json';
+import { filterStockData, getStockStatus, StockItem } from '../../dashboard/lib/utils';
+
 export function ReorderStats() {
+  const searchParams = useSearchParams();
+
+  const stats = useMemo(() => {
+    const filters = {
+      search: searchParams.get('search') || '',
+      criticalOnly: searchParams.get('criticalOnly') === 'true',
+      lowLeadTime: searchParams.get('lowLeadTime') === 'true',
+      lifeSaving: searchParams.get('lifeSaving') === 'true',
+      dateRange: 'all',
+      category: 'all',
+      status: 'all',
+      location: 'all'
+    };
+
+    const filtered = filterStockData(stockData as StockItem[], filters);
+    const atRisk = filtered.filter(item => {
+      const status = getStockStatus(item.closing_stock, item.opening_stock);
+      return status === 'critical' || status === 'low';
+    }).length;
+
+    // Mock stock-out value: (opening - closing) * $10 average
+    const totalValue = filtered.reduce((acc, item) => {
+      const missing = Math.max(0, item.opening_stock - item.closing_stock);
+      return acc + (missing * 10);
+    }, 0);
+
+    return { atRisk, totalValue };
+  }, [searchParams]);
+
   return (
     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
       <div className="flex flex-col gap-2">
@@ -10,23 +46,24 @@ export function ReorderStats() {
       </div>
       {/* Key Metrics Cards */}
       <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-        <div className="flex-1 lg:flex-none min-w-[160px] bg-white dark:bg-[#23220f] rounded-xl p-4 border border-neutral-100 dark:border-neutral-700 shadow-sm">
+        <div className="flex-1 lg:flex-none min-w-[170px] bg-white dark:bg-[#23220f] rounded-xl p-4 border border-neutral-100 dark:border-neutral-700 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <p className="text-neutral-500 text-sm font-medium">Items at Risk</p>
             <span className="material-symbols-outlined text-red-500 text-xl">warning</span>
           </div>
-          <p className="text-3xl font-bold text-neutral-dark dark:text-white">142</p>
-          <p className="text-xs text-red-600 font-medium mt-1">+12 since yesterday</p>
+          <p className="text-3xl font-bold text-neutral-dark dark:text-white">{stats.atRisk}</p>
+          <p className="text-xs text-red-600 font-medium mt-1">Requiring immediate action</p>
         </div>
-        <div className="flex-1 lg:flex-none min-w-[160px] bg-white dark:bg-[#23220f] rounded-xl p-4 border border-neutral-100 dark:border-neutral-700 shadow-sm">
+        <div className="flex-1 lg:flex-none min-w-[170px] bg-white dark:bg-[#23220f] rounded-xl p-4 border border-neutral-100 dark:border-neutral-700 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-neutral-500 text-sm font-medium">Est. Stock-out Value</p>
+            <p className="text-neutral-500 text-sm font-medium">Est. Value</p>
             <span className="material-symbols-outlined text-neutral-500 text-xl">payments</span>
           </div>
-          <p className="text-3xl font-bold text-neutral-dark dark:text-white">$45,200</p>
-          <p className="text-xs text-neutral-500 mt-1">Potential loss prevention</p>
+          <p className="text-3xl font-bold text-neutral-dark dark:text-white">${stats.totalValue.toLocaleString()}</p>
+          <p className="text-xs text-neutral-500 mt-1">Potential replenishment cost</p>
         </div>
       </div>
     </div>
   );
 }
+
