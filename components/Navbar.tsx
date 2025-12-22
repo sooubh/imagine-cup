@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { GlobalSearch } from './GlobalSearch';
+import { NotificationsDropdown } from './NotificationsDropdown';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -9,7 +11,7 @@ export function Navbar() {
   if (pathname === '/') {
     return null;
   }
-  
+
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
 
   return (
@@ -46,24 +48,12 @@ export function Navbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex relative group">
-             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="material-symbols-outlined text-neutral-500 text-[20px]">search</span>
-            </div>
-            <input 
-              className="block w-48 pl-9 pr-3 py-2 border-none rounded-full leading-5 bg-background-light dark:bg-[#323118] text-neutral-dark placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm" 
-              placeholder="Search..." 
-              type="text"
-            />
-          </div>
-          <button className="flex items-center justify-center w-10 h-10 rounded-full bg-background-light dark:bg-[#323118] hover:bg-neutral-200 dark:hover:bg-[#403e20] transition-colors relative">
-            <span className="material-symbols-outlined text-[20px] text-neutral-600 dark:text-neutral-400">notifications</span>
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-[#323118]"></span>
-          </button>
-          <button className="flex items-center justify-center w-10 h-10 rounded-full bg-background-light dark:bg-[#323118] hover:bg-neutral-200 dark:hover:bg-[#403e20] transition-colors">
+          <GlobalSearch />
+          <NotificationsDropdown />
+          <Link href="/dashboard/settings" className="flex items-center justify-center w-10 h-10 rounded-full bg-background-light dark:bg-[#323118] hover:bg-neutral-200 dark:hover:bg-[#403e20] transition-colors">
             <span className="material-symbols-outlined text-[20px] text-neutral-600 dark:text-neutral-400">settings</span>
-          </button>
-          <div className="w-10 h-10 rounded-full bg-cover bg-center border-2 border-white dark:border-[#323118] shadow-sm ml-2 cursor-pointer bg-neutral-200" style={{backgroundImage: "url('https://i.pravatar.cc/150?img=11')"}}></div>
+          </Link>
+          <Link href="/dashboard/settings" className="w-10 h-10 rounded-full bg-cover bg-center border-2 border-white dark:border-[#323118] shadow-sm ml-2 cursor-pointer bg-neutral-200" style={{ backgroundImage: "url('https://i.pravatar.cc/150?img=11')" }}></Link>
         </div>
       </div>
     </header>

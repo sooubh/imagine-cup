@@ -3,7 +3,7 @@ import { ItemProfileCard } from '@/app/item/components/ItemProfileCard';
 import { StockChartVisual } from '@/app/item/components/StockChartVisual';
 import { RiskAssessmentCard } from '@/app/item/components/RiskAssessmentCard';
 
-export default function ItemPage({ params }: { params: { itemId: string } }) {
+export default function ItemPage() {
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark font-display flex flex-col">
       <Navbar />
@@ -37,7 +37,7 @@ export default function ItemPage({ params }: { params: { itemId: string } }) {
           {/* Left Panel: Item Profile */}
           <div className="lg:col-span-3 flex flex-col gap-6">
             <ItemProfileCard />
-            
+
             {/* Quick Stats Mini */}
             <div className="bg-white dark:bg-[#1a190b] rounded-xl p-5 shadow-sm border border-neutral-100 dark:border-neutral-700">
               <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-neutral-dark dark:text-white">
@@ -72,7 +72,7 @@ export default function ItemPage({ params }: { params: { itemId: string } }) {
                   <button className="px-3 py-1 rounded-full text-xs font-medium text-neutral-500 hover:text-neutral-dark dark:hover:text-white transition-colors">6M</button>
                 </div>
               </div>
-              
+
               <StockChartVisual />
 
               <div className="flex gap-6 mt-6 justify-center">

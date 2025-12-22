@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function AlertsSidebar() {
   return (
@@ -55,7 +56,13 @@ export function AlertsSidebar() {
       <div className="bg-white dark:bg-[#2a2912] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm p-1 overflow-hidden">
         <div className="relative w-full h-48 rounded-xl bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
           {/* Placeholder for Map Image */}
-          <img alt="Map of distribution area" className="w-full h-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4ljwks1wYl2OKb5aHDEgmfKnT6oIlQNGBkOlP7bSu5dHDisveh8VJ2s5pI7JLGJzxpf8VB-IbJLS1sGWFLbJ1OPDhflz4QeSs05PlEXXxUYqXdaU2YEtbROoATyKPi8QsyC1JWg0YHi8YwONfr7nbcBT04bgYQirn0GmBanzvAqMt44Lo0ziQEgviVkssTNsEOLzFfoR4Ldm3nRuwfun5cI4xeXvafDfWhmaozCCBaPVzZ13KfGEUo0KMctqdXNTwzznlyEHKxCo" />
+          <Image
+            alt="Map of distribution area"
+            className="w-full h-full object-cover opacity-80"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4ljwks1wYl2OKb5aHDEgmfKnT6oIlQNGBkOlP7bSu5dHDisveh8VJ2s5pI7JLGJzxpf8VB-IbJLS1sGWFLbJ1OPDhflz4QeSs05PlEXXxUYqXdaU2YEtbROoATyKPi8QsyC1JWg0YHi8YwONfr7nbcBT04bgYQirn0GmBanzvAqMt44Lo0ziQEgviVkssTNsEOLzFfoR4Ldm3nRuwfun5cI4xeXvafDfWhmaozCCBaPVzZ13KfGEUo0KMctqdXNTwzznlyEHKxCo"
+            fill
+            unoptimized
+          />
           {/* Overlay Markers */}
           <div className="absolute top-1/4 left-1/3 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></div>
           <div className="absolute top-1/2 right-1/4 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>

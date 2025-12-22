@@ -6,7 +6,7 @@ export interface StockItem {
   closing_stock: number;
   avg_daily_issue: number;
   lead_time_days: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function calculateDaysLeft(stock: number, avgDailyIssue: number): number {

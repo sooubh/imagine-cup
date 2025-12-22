@@ -13,8 +13,14 @@ import {
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 
+interface ChartDataPoint {
+  day: string;
+  stock: number;
+  predicted?: number;
+}
+
 interface StockChartProps {
-  data: any[];
+  data: ChartDataPoint[];
   threshold?: number;
 }
 
@@ -39,7 +45,7 @@ export function StockHistoryChart({ data, threshold = 100 }: StockChartProps) {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
               <XAxis dataKey="day" stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 itemStyle={{ fontSize: '12px' }}
               />

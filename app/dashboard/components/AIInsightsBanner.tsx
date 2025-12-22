@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Card } from '@/components/Card';
 
 export function AIInsightsBanner() {
   return (
