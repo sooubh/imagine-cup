@@ -33,7 +33,7 @@ export function StockHeatmapTable() {
             {/* Row 1 */}
             <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
               <td className="px-6 py-4 font-medium sticky left-0 z-10 bg-white dark:bg-[#2a2912] group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800 text-neutral-dark dark:text-white">
-                <Link href="/item/1" className="flex items-center gap-3 hover:text-primary transition-colors">
+                <Link href="/item/MED-102" className="flex items-center gap-3 hover:text-primary transition-colors">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
                     <span className="material-symbols-outlined text-[18px]">pill</span>
                   </div>
@@ -72,12 +72,12 @@ export function StockHeatmapTable() {
             {/* Row 2 */}
             <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
               <td className="px-6 py-4 font-medium sticky left-0 z-10 bg-white dark:bg-[#2a2912] group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800 text-neutral-dark dark:text-white">
-                <div className="flex items-center gap-3">
+                <Link href="/item/MED-103" className="flex items-center gap-3 hover:text-primary transition-colors">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
                     <span className="material-symbols-outlined text-[18px]">vaccines</span>
                   </div>
                   Insulin
-                </div>
+                </Link>
               </td>
               <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800/50 flex items-center justify-center font-medium text-xs">
@@ -101,15 +101,15 @@ export function StockHeatmapTable() {
               </td>
               <td className="px-6 py-4 text-right font-mono text-neutral-500">50 units</td>
             </tr>
-             {/* Row 3 */}
+            {/* Row 3 */}
             <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
               <td className="px-6 py-4 font-medium sticky left-0 z-10 bg-white dark:bg-[#2a2912] group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800 text-neutral-dark dark:text-white">
-                <div className="flex items-center gap-3">
+                <Link href="/item/SUP-101" className="flex items-center gap-3 hover:text-primary transition-colors">
                   <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
                     <span className="material-symbols-outlined text-[18px]">lunch_dining</span>
                   </div>
                   Rice Bags
-                </div>
+                </Link>
               </td>
               <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800/50 flex items-center justify-center font-medium text-xs">
@@ -118,7 +118,7 @@ export function StockHeatmapTable() {
               </td>
               <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800/50 flex items-center justify-center font-medium text-xs">
-                   Healthy
+                  Healthy
                 </div>
               </td>
               <td className="px-6 py-4">
@@ -126,22 +126,22 @@ export function StockHeatmapTable() {
                   Critical Low
                 </div>
               </td>
-               <td className="px-6 py-4">
+              <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800/50 flex items-center justify-center font-bold text-xs cursor-pointer">
                   Critical Low
                 </div>
               </td>
               <td className="px-6 py-4 text-right font-mono text-neutral-500">400 kg</td>
             </tr>
-             {/* Row 4 */}
+            {/* Row 4 */}
             <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
               <td className="px-6 py-4 font-medium sticky left-0 z-10 bg-white dark:bg-[#2a2912] group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800 text-neutral-dark dark:text-white">
-                <div className="flex items-center gap-3">
+                <Link href="/item/SUP-102" className="flex items-center gap-3 hover:text-primary transition-colors">
                   <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
                     <span className="material-symbols-outlined text-[18px]">bed</span>
                   </div>
                   Blankets
-                </div>
+                </Link>
               </td>
               <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800/50 flex items-center justify-center font-medium text-xs">
@@ -150,7 +150,7 @@ export function StockHeatmapTable() {
               </td>
               <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800/50 flex items-center justify-center font-medium text-xs">
-                   Healthy
+                  Healthy
                 </div>
               </td>
               <td className="px-6 py-4">
@@ -158,7 +158,7 @@ export function StockHeatmapTable() {
                   Healthy
                 </div>
               </td>
-               <td className="px-6 py-4">
+              <td className="px-6 py-4">
                 <div className="w-full h-10 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800/50 flex items-center justify-center font-medium text-xs">
                   Healthy
                 </div>

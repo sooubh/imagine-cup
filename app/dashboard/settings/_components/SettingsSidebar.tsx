@@ -26,8 +26,8 @@ export function SettingsSidebar({ activeTab, onTabChange }: SettingsSidebarProps
                     className={clsx(
                         'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors w-full text-left',
                         activeTab === item.id
-                            ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400'
-                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                            ? 'bg-indigo-50 text-indigo-700 dark:bg-primary/20 dark:text-primary-light'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#323118] dark:hover:text-white'
                     )}
                 >
                     <item.icon className="h-5 w-5" />

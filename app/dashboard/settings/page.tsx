@@ -17,7 +17,7 @@ export default function SettingsPage() {
       <div className="w-full md:w-64 flex-shrink-0">
         <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+      <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1f1e0b] rounded-xl shadow-sm border border-slate-200 dark:border-neutral-800 p-6">
         <h1 className="text-2xl font-bold mb-6 capitalize text-slate-800 dark:text-slate-100">
           {activeTab} Settings
         </h1>
