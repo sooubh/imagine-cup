@@ -19,10 +19,10 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col bg-slate-50 dark:bg-[#1f1e0b] border-r border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-slate-300 hidden md:flex">
       <div className="flex h-16 items-center justify-center border-b border-slate-200 dark:border-neutral-800 px-6">
-        <div className="flex items-center gap-2 font-bold text-xl text-indigo-600 dark:text-primary">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-indigo-600 dark:text-primary hover:opacity-80 transition-opacity">
           <BarChart3 className="h-6 w-6" />
           <span>StockHealth AI</span>
-        </div>
+        </Link>
       </div>
       <nav className="flex-1 space-y-1 px-4 py-6">
         {navItems.map((item) => {
