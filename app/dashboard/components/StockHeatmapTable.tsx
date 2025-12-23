@@ -2,14 +2,40 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import stockData from '@/data/sampleStockData.json';
-import { filterStockData, getStockStatus, StockItem } from '../lib/utils';
-import { useMemo } from 'react';
+import stockDataRaw from '@/data/sampleStockData.json';
+import { filterStockData, getStockStatus, StockItem, adaptAzureItems } from '../lib/utils';
+import { useMemo, useState, useEffect } from 'react';
+import { RefreshCw } from 'lucide-react';
 
 export function StockHeatmapTable() {
   const searchParams = useSearchParams();
+  const [azureData, setAzureData] = useState<StockItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch Azure Data on Mount
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/items');
+        if (res.ok) {
+          const data = await res.json();
+          // Adapt the simple list to the complex heatmap structure
+          const adapted = adaptAzureItems(data);
+          setAzureData(adapted);
+        }
+      } catch (err) {
+        console.error("Failed to fetch Azure data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const { processedData, locations } = useMemo(() => {
+    // Merge Static Sample Data + Dynamic Azure Data
+    const combinedData = [...azureData, ...(stockDataRaw as StockItem[])];
+
     const filters = {
       dateRange: searchParams.get('dateRange') || '7d',
       category: searchParams.get('category') || 'all',
@@ -18,17 +44,15 @@ export function StockHeatmapTable() {
       view: searchParams.get('view') || 'district',
     };
 
-    // We filter data first.
-    // However, for the pivot table, if we filter by Location, we only want to show that column?
-    // Or if we filter by Status, we show rows that match that status?
-    // The `filterStockData` helper filters ROWS (StockItem).
-    // If we filter by 'Critical' status, we will get only items that are critical in specific locations.
+    const filtered = filterStockData(combinedData, filters);
 
-    const filtered = filterStockData(stockData as StockItem[], filters);
-
-    // Get all unique locations from the FULL dataset to keep columns stable, 
-    // UNLESS location filter is applied.
-    let allLocations = Array.from(new Set((stockData as StockItem[]).map(i => i.location_name))).sort();
+    // Get all unique locations including the new "My Stock (Azure)"
+    let allLocations = Array.from(new Set(combinedData.map(i => i.location_name))).sort((a,b) => {
+        // Force "My Stock" to be first if present
+        if(a.includes("Azure")) return -1;
+        if(b.includes("Azure")) return 1;
+        return a.localeCompare(b);
+    });
 
     if (filters.location !== 'all') {
       allLocations = [filters.location];
@@ -59,12 +83,15 @@ export function StockHeatmapTable() {
     });
 
     return { processedData: rows, locations: allLocations };
-  }, [searchParams]);
+  }, [searchParams, azureData]);
 
   return (
-    <div className="bg-white dark:bg-[#2a2912] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden flex-1 flex flex-col">
+    <div className="bg-white dark:bg-[#2a2912] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[500px]">
       <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-        <h3 className="font-bold text-lg text-neutral-dark dark:text-white">Stock Health Heatmap</h3>
+        <div className='flex items-center gap-3'>
+            <h3 className="font-bold text-lg text-neutral-dark dark:text-white">Stock Health Heatmap</h3>
+            {loading && <RefreshCw className='w-4 h-4 animate-spin text-neutral-400' />}
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-500">
             <span className="w-2 h-2 rounded-full bg-green-500"></span> Healthy
@@ -83,7 +110,9 @@ export function StockHeatmapTable() {
             <tr>
               <th className="px-6 py-4 sticky left-0 z-10 bg-neutral-50 dark:bg-[#323118]">Item Name</th>
               {locations.map(loc => (
-                <th key={loc} className="px-6 py-4">{loc}</th>
+                <th key={loc} className={`px-6 py-4 ${loc.includes("Azure") ? 'text-blue-500 font-bold' : ''}`}>
+                    {loc.includes("Azure") ? "My Stock (Live)" : loc}
+                </th>
               ))}
               <th className="px-6 py-4 text-right">Total Stock</th>
             </tr>

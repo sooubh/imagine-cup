@@ -109,3 +109,23 @@ export function filterStockData(data: StockItem[], filters: FilterState) {
         return true;
     });
 }
+
+// ADAPTER: Convert simple Azure/User items to the complex Dashboard format
+export function adaptAzureItems(azureItems: any[]): StockItem[] {
+    return azureItems.map(item => ({
+        location_id: "LOC-USER-001",
+        location_name: "My Stock (Azure)",
+        item_id: item.id || Math.random().toString(36),
+        item_name: item.name,
+        category: item.category || "General",
+        opening_stock: Number(item.quantity) + 10, // Simulated opening
+        received: 10,
+        issued: 0,
+        closing_stock: Number(item.quantity),
+        avg_daily_issue: Math.floor(Math.random() * 5),
+        lead_time_days: 2,
+        unit: "units",
+        last_updated: item.lastUpdated || new Date().toISOString()
+    }));
+}
+

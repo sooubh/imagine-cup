@@ -46,8 +46,8 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <label className="text-neutral-dark dark:text-gray-200 text-sm font-semibold ml-1">Select Role</label>
               <div className="relative rounded-xl transition-shadow duration-200 focus-within:ring-2 focus-within:ring-primary">
-                <select className="w-full h-14 pl-4 pr-10 rounded-xl bg-background-light dark:bg-[#1a190b] border-transparent focus:border-transparent focus:ring-0 text-neutral-dark dark:text-white text-base appearance-none cursor-pointer">
-                  <option disabled selected value="">Choose your access level</option>
+                <select defaultValue="" className="w-full h-14 pl-4 pr-10 rounded-xl bg-background-light dark:bg-[#1a190b] border-transparent focus:border-transparent focus:ring-0 text-neutral-dark dark:text-white text-base appearance-none cursor-pointer">
+                  <option disabled value="">Choose your access level</option>
                   <option value="hospital_manager">Hospital/PHC Manager</option>
                   <option value="procurement">Procurement Officer</option>
                   <option value="ngo_officer">NGO Field Officer</option>
