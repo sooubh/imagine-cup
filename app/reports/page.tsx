@@ -1,3 +1,4 @@
+"use client";
 import { ReportsTabs } from './components/ReportsTabs';
 import { CriticalReports } from './components/CriticalReports';
 import { RegionalComparison } from './components/RegionalComparison';

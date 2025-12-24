@@ -1,3 +1,5 @@
+'use client';
+
 export function RegionalComparison() {
   return (
     <div className="lg:col-span-2 flex flex-col gap-4">

@@ -1,3 +1,5 @@
+'use client';
+
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 
 export function UserManagementTable() {

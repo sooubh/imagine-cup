@@ -1,3 +1,5 @@
+'use client';
+
 export function DataSourcesWidget() {
   return (
     <div className="flex flex-col gap-4">

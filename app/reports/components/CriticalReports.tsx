@@ -1,3 +1,5 @@
+'use client';
+
 export function CriticalReports() {
   return (
     <section>
