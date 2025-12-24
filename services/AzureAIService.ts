@@ -13,7 +13,11 @@ export class AzureAIService {
     private deploymentName: string = "";
 
     constructor() {
-        const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+        this.initializeClient();
+    }
+
+    private initializeClient() {
+        const endpoint = process.env.AZURE_OPENAI_ENDPOINT?.replace(/\/+$/, ""); // Remove trailing slash
         const apiKey = process.env.AZURE_OPENAI_API_KEY;
         this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "";
 
@@ -42,6 +46,8 @@ export class AzureAIService {
 
     // Generate a quick insight for the dashboard banner
     async getDashboardInsight(inventoryCtx: string): Promise<StockInsight> {
+        if (!this.client) this.initializeClient();
+
         if (!this.client) {
             return this.getMockInsight();
         }
@@ -84,6 +90,8 @@ export class AzureAIService {
 
     // Chat with data
     async chatWithData(userMessage: string, context: string): Promise<string> {
+        if (!this.client) this.initializeClient();
+
         if (!this.client) {
             return "I am currently in offline mode. Please configure Azure OpenAI credentials to chat with your real data.";
         }
@@ -98,9 +106,9 @@ export class AzureAIService {
                 temperature: 0.5,
             });
             return completion.choices[0].message.content || "I couldn't process that.";
-        } catch (error) {
+        } catch (error: any) {
             console.error("Chat Error:", error);
-            return "Sorry, I'm having trouble connecting to the AI service right now.";
+            return `Connection Error: ${error.message || "Unknown error"}. Check your .env.local configuration.`;
         }
     }
 
