@@ -78,7 +78,10 @@ export function StatsGrid() {
 
       <div className="bg-white dark:bg-[#2a2912] p-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-neutral-500">Est. Waste Prevented</span>
+          <span className="text-sm font-medium text-neutral-500 flex items-center gap-1">
+             Est. Waste Prevented
+             <span className="bg-gradient-to-r from-blue-500 to-primary text-white text-[9px] px-1.5 py-0.5 rounded font-bold">AI</span>
+          </span>
           <span className="material-symbols-outlined text-neutral-400">savings</span>
         </div>
         <div className="flex items-baseline gap-2">

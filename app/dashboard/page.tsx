@@ -4,6 +4,8 @@ import { AIInsightsBanner } from './components/AIInsightsBanner';
 import { StatsGrid } from './components/StatsGrid';
 import { StockHeatmapTable } from './components/StockHeatmapTable';
 import { AlertsSidebar } from './components/AlertsSidebar';
+import { AIChatAssistant } from './components/AIChatAssistant';
+import { RecentActivityFeed } from './components/RecentActivityFeed';
 
 export default function DashboardPage() {
   return (
@@ -18,12 +20,18 @@ export default function DashboardPage() {
           <StatsGrid />
         </Suspense>
         <Suspense fallback={<div className="h-96 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-2xl" />}>
-          <StockHeatmapTable />
+          <StockHeatmapTable limit={20} />
         </Suspense>
       </div>
 
       {/* Right Column: Sidebar (Alerts & Actions) */}
-      <AlertsSidebar />
+      <div className="flex flex-col gap-8 shrink-0 w-full lg:w-[320px] xl:w-[360px]">
+        <AlertsSidebar />
+        <RecentActivityFeed />
+      </div>
+
+      {/* Floating AI Chat */}
+      <AIChatAssistant />
     </div>
   );
 }

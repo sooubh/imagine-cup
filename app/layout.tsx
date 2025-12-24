@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Providers } from './providers';
+import { ToastProvider } from './context/ToastContext';
 
 export const metadata: Metadata = {
   title: 'StockHealth AI',
@@ -24,8 +25,10 @@ export default function RootLayout({
       </head>
       <body className="font-body bg-background-light dark:bg-background-dark text-neutral-dark dark:text-white transition-colors duration-300">
         <Providers>
-          <Navbar />
-          {children}
+          <ToastProvider>
+            <Navbar />
+            {children}
+          </ToastProvider>
         </Providers>
       </body>
     </html>

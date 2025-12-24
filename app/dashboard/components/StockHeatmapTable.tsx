@@ -7,7 +7,11 @@ import { filterStockData, getStockStatus, StockItem, adaptAzureItems } from '../
 import { useMemo, useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 
-export function StockHeatmapTable() {
+export interface StockHeatmapTableProps {
+    limit?: number;
+}
+
+export function StockHeatmapTable(props: StockHeatmapTableProps) {
   const searchParams = useSearchParams();
   const [azureData, setAzureData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +36,7 @@ export function StockHeatmapTable() {
     fetchData();
   }, []);
 
-  const { processedData, locations } = useMemo(() => {
+  const { processedData, locations, hasMore } = useMemo(() => {
     // Merge Static Sample Data + Dynamic Azure Data
     const combinedData = [...azureData, ...(stockDataRaw as StockItem[])];
 
@@ -71,7 +75,7 @@ export function StockHeatmapTable() {
     });
 
     // Convert to array for rendering
-    const rows = Array.from(pivot.entries()).map(([itemName, locMap]) => {
+    let rows = Array.from(pivot.entries()).map(([itemName, locMap]) => {
       let totalStock = 0;
       locMap.forEach(item => totalStock += item.closing_stock);
       return {
@@ -82,8 +86,13 @@ export function StockHeatmapTable() {
       };
     });
 
-    return { processedData: rows, locations: allLocations };
-  }, [searchParams, azureData]);
+    const hasMore = props.limit ? rows.length > props.limit : false;
+    if (props.limit) {
+        rows = rows.slice(0, props.limit);
+    }
+
+    return { processedData: rows, locations: allLocations, hasMore };
+  }, [searchParams, azureData, props.limit]);
 
   return (
     <div className="bg-white dark:bg-[#2a2912] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[500px]">
@@ -187,6 +196,14 @@ export function StockHeatmapTable() {
           </tbody>
         </table>
       </div>
+      {hasMore && (
+        <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-center bg-neutral-50/50 dark:bg-black/20">
+            <Link href="/stocks" className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#323118] border border-neutral-200 dark:border-neutral-700 rounded-full text-sm font-bold text-neutral-700 dark:text-neutral-200 hover:shadow-md transition-all hover:text-primary">
+                <span>View Full Inventory</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </Link>
+        </div>
+      )}
     </div>
   );
 }

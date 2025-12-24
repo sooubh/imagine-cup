@@ -7,7 +7,10 @@ export function AlertsSidebar() {
       {/* Urgent Action Stack */}
       <div className="bg-white dark:bg-[#2a2912] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-lg text-neutral-dark dark:text-white">Alerts & Actions</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-lg text-neutral-dark dark:text-white">AI Alerts & Actions</h3>
+            <span className="material-symbols-outlined text-primary text-sm animate-pulse">auto_awesome</span>
+          </div>
           <span className="bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full">3 New</span>
         </div>
         <div className="space-y-3">

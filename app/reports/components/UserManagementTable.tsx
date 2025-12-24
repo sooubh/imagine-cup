@@ -1,9 +1,36 @@
+import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
+
 export function UserManagementTable() {
+  const handleExport = (type: 'csv' | 'pdf') => {
+    // Mock user data matching the table rows
+    const users = [
+      { name: "Sarah Chen", email: "sarah.c@gov.org", role: "Super Admin", region: "Central HQ", lastActive: "Just now" },
+      { name: "Marcus Johnson", email: "m.johnson@relief.org", role: "Logistician", region: "North District", lastActive: "2 hrs ago" },
+      { name: "Priya Patel", email: "priya.p@health.gov", role: "Viewer", region: "East Region", lastActive: "Yesterday" },
+    ];
+
+    if (type === 'csv') {
+      exportToCSV(users, 'team_members');
+    } else {
+      const headers = ["Name", "Email", "Role", "Region", "Last Active"];
+      const rows = users.map(u => [u.name, u.email, u.role, u.region, u.lastActive]);
+      exportToPDF("Active Team Members", headers, rows, 'team_members');
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold tracking-tight text-neutral-dark dark:text-white">Active Team Members</h3>
         <div className="flex gap-2">
+           <button onClick={() => handleExport('csv')} className="h-9 px-3 rounded-full bg-white dark:bg-[#23220f] border border-neutral-200 dark:border-neutral-700 text-xs font-bold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2">
+             <span className="material-symbols-outlined text-[16px]">csv</span>
+             Wait
+           </button>
+           <button onClick={() => handleExport('pdf')} className="h-9 px-3 rounded-full bg-white dark:bg-[#23220f] border border-neutral-200 dark:border-neutral-700 text-xs font-bold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2">
+             <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+             PDF
+           </button>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-500 text-[18px]">search</span>
             <input 
