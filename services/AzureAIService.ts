@@ -18,6 +18,12 @@ export class AzureAIService {
         this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "";
 
         if (endpoint && apiKey && this.deploymentName) {
+            // Check for placeholders
+            if (endpoint.includes("YOUR_") || apiKey.includes("your_") || this.deploymentName.includes("your_")) {
+                console.warn("⚠️ Azure OpenAI Credentials appear to be placeholders. Please update .env.local with your actual keys.");
+                return;
+            }
+
             try {
                 this.client = new OpenAI({
                     apiKey: apiKey,
