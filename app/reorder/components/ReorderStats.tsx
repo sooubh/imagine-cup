@@ -2,35 +2,19 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
-import stockData from '@/data/sampleStockData.json';
-import { filterStockData, getStockStatus, StockItem } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
 
 export function ReorderStats() {
   const searchParams = useSearchParams();
 
+  // Placeholder for real data fetching
   const stats = useMemo(() => {
-    const filters = {
-      search: searchParams.get('search') || '',
-      criticalOnly: searchParams.get('criticalOnly') === 'true',
-      lowLeadTime: searchParams.get('lowLeadTime') === 'true',
-      lifeSaving: searchParams.get('lifeSaving') === 'true',
-      dateRange: 'all',
-      category: 'all',
-      status: 'all',
-      location: 'all'
-    };
-
-    const filtered = filterStockData(stockData as StockItem[], filters);
-    const atRisk = filtered.filter(item => {
-      const status = getStockStatus(item.closing_stock, item.opening_stock);
-      return status === 'critical' || status === 'low';
-    }).length;
-
-    // Mock stock-out value: (opening - closing) * $10 average
-    const totalValue = filtered.reduce((acc, item) => {
-      const missing = Math.max(0, item.opening_stock - item.closing_stock);
-      return acc + (missing * 10);
-    }, 0);
+    // TODO: Fetch real items from Context or API for stats
+    const filtered: StockItem[] = []; 
+    
+    // Mock calculation for demonstration until data is wired up
+    const atRisk = 12; 
+    const totalValue = 15420;
 
     return { atRisk, totalValue };
   }, [searchParams]);

@@ -7,7 +7,7 @@ import { ReorderTable } from './ReorderTable';
 import { StickyActionFooter } from './StickyActionFooter';
 import { ItemDetailsModal } from './ItemDetailsModal';
 import { EditItemModal } from './EditItemModal';
-import { StockItem } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
 
 export function ReorderPageContent() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);

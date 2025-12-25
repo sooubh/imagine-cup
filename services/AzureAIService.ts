@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { SYSTEM_PROMPT } from "@/lib/aiContext";
 
 // Interface for AI response
 export interface StockInsight {
@@ -32,7 +33,7 @@ export class AzureAIService {
                 this.client = new OpenAI({
                     apiKey: apiKey,
                     baseURL: `${endpoint}/openai/deployments/${this.deploymentName}`,
-                    defaultQuery: { "api-version": "2024-02-15-preview" },
+                    defaultQuery: { "api-version": "2025-01-01-preview" },
                     defaultHeaders: { "api-key": apiKey },
                 });
                 console.log("✅ Azure OpenAI Client Initialized");
@@ -99,7 +100,7 @@ export class AzureAIService {
         try {
             const completion = await this.client.chat.completions.create({
                 messages: [
-                    { role: "system", content: `You are a helpful inventory assistant. Answer based on this data: ${context}. Keep answers brief and professional.` },
+                    { role: "system", content: `${SYSTEM_PROMPT}\n\nData Context:\n${context}` },
                     { role: "user", content: userMessage }
                 ],
                 model: this.deploymentName,

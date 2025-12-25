@@ -24,7 +24,9 @@ export async function POST(request: Request) {
             category: body.category || 'General',
             quantity: Number(body.quantity),
             price: Number(body.price),
-            status: body.quantity > 100 ? 'In Stock' : body.quantity > 0 ? 'Low Stock' : 'Out of Stock'
+            status: body.quantity > 100 ? 'In Stock' : body.quantity > 0 ? 'Low Stock' : 'Out of Stock',
+            ownerId: body.ownerId,
+            section: body.section
         });
 
         return NextResponse.json(newItem, { status: 201 });

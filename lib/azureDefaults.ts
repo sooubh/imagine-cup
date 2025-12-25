@@ -9,43 +9,37 @@ export interface StockItem {
     price: number;
     status: "In Stock" | "Low Stock" | "Out of Stock";
     lastUpdated: string;
+    expiryDate?: string; // ISO Date String
+    unit?: string;       // e.g., 'box', 'vial', 'kg'
+    ownerId: string;
+    section: 'PSD' | 'Hospital' | 'NGO';
 }
 
-// Configuration for Azure Cosmos DB
-// GUIDE FOR USER:
-// 1. Create an Azure Cosmos DB account in the Azure Portal.
-// 2. Create a database named 'InventoryDB' and a container named 'Items'.
-// 3. Get your connection string (URI and Key) from the 'Keys' section.
-// 4. Add them to your .env.local file as:
-//    AZURE_COSMOS_ENDPOINT="your_endpoint_uri"
-//    AZURE_COSMOS_KEY="your_primary_key"
-
+// Configuration
 const ENDPOINT = process.env.AZURE_COSMOS_ENDPOINT;
 const KEY = process.env.AZURE_COSMOS_KEY;
 const DATABASE_NAME = "InventoryDB";
-const CONTAINER_NAME = "Items";
 
-// Mock data to show when Azure is not connected
-let mockItems: StockItem[] = [
-    {
-        id: "1",
-        name: "Surgical Masks",
-        category: "PPE",
-        quantity: 5000,
-        price: 0.5,
-        status: "In Stock",
-        lastUpdated: new Date().toISOString(),
-    },
-    {
-        id: "2",
-        name: "Nitrile Gloves",
-        category: "PPE",
-        quantity: 120,
-        price: 12.0,
-        status: "Low Stock",
-        lastUpdated: new Date().toISOString(),
-    },
-];
+// Map Sections to Container Names
+const CONTAINERS = {
+    PSD: "Items_PSD",
+    Hospital: "Items_Hospital",
+    NGO: "Items_NGO"
+};
+const ACTIVITIES_CONTAINER = "Activities";
+
+export interface Activity {
+    id: string;
+    user: string;
+    action: string;
+    target: string;
+    time: string;
+    type: 'update' | 'create' | 'delete' | 'alert';
+    section: string;
+}
+
+// Mock data fallback (simplified)
+let mockItems: StockItem[] = [];
 
 class AzureInventoryService {
     private client: CosmosClient | null = null;
@@ -57,37 +51,127 @@ class AzureInventoryService {
                 this.client = new CosmosClient({ endpoint: ENDPOINT, key: KEY });
                 this.isConnected = true;
                 console.log("✅ Azure Cosmos DB Client Initialized");
+                this.initContainers(); // Fire and forget initialization
             } catch (error) {
                 console.error("❌ Failed to initialize Azure Client", error);
             }
-        } else {
-            console.warn("⚠️ Azure Credentials not found. Using Mock Data Mode.");
         }
     }
 
-    // Helper to get container
-    private getContainer() {
-        if (!this.client) return null;
-        return this.client.database(DATABASE_NAME).container(CONTAINER_NAME);
+    private async initContainers() {
+        if (!this.client || !this.isConnected) return;
+        try {
+            const db = this.client.database(DATABASE_NAME);
+            await db.read(); // Ensure DB exists (or create manually)
+
+            // Create Stock Containers
+            for (const [key, containerName] of Object.entries(CONTAINERS)) {
+                await db.containers.createIfNotExists({ id: containerName, partitionKey: "/category" });
+                console.log(`Verified Container: ${containerName}`);
+            }
+            // Create Activities Container
+            await db.containers.createIfNotExists({ id: ACTIVITIES_CONTAINER, partitionKey: "/section" });
+            console.log(`Verified Container: ${ACTIVITIES_CONTAINER}`);
+        } catch (e) {
+            console.error("Error initializing containers:", e);
+        }
     }
 
-    async getAllItems(): Promise<StockItem[]> {
+    private getContainer(section: string) {
+        if (!this.client) {
+            console.error("❌ getContainer: Client is null");
+            return null;
+        }
+        // Access strictly via mapping, default to Hospital if unknown to prevent crash
+        const rawName = CONTAINERS[section as keyof typeof CONTAINERS];
+        if (!rawName) {
+            console.warn(`⚠️ Warning: Unknown section '${section}', defaulting to Hospital`);
+        }
+        const containerName = rawName || CONTAINERS.Hospital;
+
+        console.log(`🔍 getContainer: Resolving '${section}' -> '${containerName}'`);
+        return this.client.database(DATABASE_NAME).container(containerName);
+    }
+
+    // --- ACTIVITY LOGGING ---
+    async logActivity(user: string, action: string, target: string, type: Activity['type'], section: string) {
+        if (!this.isConnected || !this.client) return;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ACTIVITIES_CONTAINER);
+            const activity: Activity = {
+                id: Math.random().toString(36).substring(7),
+                user,
+                action,
+                target,
+                time: new Date().toISOString(),
+                type,
+                section
+            };
+            await container.items.create(activity);
+        } catch (e) {
+            console.error("Failed to log activity:", e);
+        }
+    }
+
+    async getRecentActivities(section: string, limit: number = 5): Promise<Activity[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ACTIVITIES_CONTAINER);
+            const { resources } = await container.items
+                .query({
+                    query: "SELECT * FROM c WHERE c.section = @section ORDER BY c.time DESC OFFSET 0 LIMIT @limit",
+                    parameters: [
+                        { name: "@section", value: section },
+                        { name: "@limit", value: limit }
+                    ]
+                })
+                .fetchAll();
+            return resources as Activity[];
+        } catch (e) {
+            console.error("Failed to fetch activities:", e);
+            return [];
+        }
+    }
+
+    // ALL ITEMS now requires knowing the SECTION (Container)
+    async getAllItems(section?: string): Promise<StockItem[]> {
+        console.log(`🚀 getAllItems: Started for section '${section}'`);
+
+        if (!section) {
+            console.warn("⚠️ getAllItems: No section provided. Returning empty.");
+            return [];
+        }
+
         if (this.isConnected && this.client) {
             try {
-                const container = this.getContainer();
+                const container = this.getContainer(section);
                 if (container) {
-                    const { resources } = await container.items
-                        .query("SELECT * from c")
-                        .fetchAll();
+                    console.log(`⚡ Querying Cosmos container: ${container.id}...`);
+                    const { resources } = await container.items.query("SELECT * from c").fetchAll();
+                    console.log(`✅ getAllItems: Found ${resources.length} items in ${container.id}`);
                     return resources as StockItem[];
+                } else {
+                    console.error("❌ getAllItems: Container not found/initialized");
                 }
             } catch (error) {
-                console.error("Failed to fetch from Azure:", error);
-                return mockItems; // Fallback
+                console.error(`❌ getAllItems Error fetching from ${section}:`, error);
+                return [];
             }
+        } else {
+            console.warn("⚠️ getAllItems: Azure not connected");
         }
-        // Return mock data if not connected
-        return Promise.resolve([...mockItems]);
+        return [];
+    }
+
+    // FETCH ALL across ALL containers (For Super Admin or initial Debug)
+    async getGlobalItems(): Promise<StockItem[]> {
+        if (!this.isConnected || !this.client) return [];
+        let all: StockItem[] = [];
+        for (const section of Object.keys(CONTAINERS)) {
+            const items = await this.getAllItems(section);
+            all = [...all, ...items];
+        }
+        return all;
     }
 
     async addItem(item: Omit<StockItem, "id" | "lastUpdated">): Promise<StockItem> {
@@ -99,22 +183,71 @@ class AzureInventoryService {
 
         if (this.isConnected && this.client) {
             try {
-                const container = this.getContainer();
+                // Determine container from item.section
+                const container = this.getContainer(newItem.section);
                 if (container) {
                     const { resource } = await container.items.create(newItem);
+                    // Log
+                    this.logActivity(newItem.ownerId, "added stock", newItem.name, 'create', newItem.section);
                     return resource as StockItem;
                 }
             } catch (error) {
                 console.error("Failed to add to Azure:", error);
-                // Fallback to local push
-                mockItems.push(newItem);
-                return newItem;
             }
         }
+        return newItem;
+    }
 
-        // Local Mock Logic
-        mockItems.push(newItem);
-        return Promise.resolve(newItem);
+    async updateItem(id: string, updates: Partial<StockItem>, section: string): Promise<StockItem | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.getContainer(section);
+            if (!container) return null;
+
+            // 1. Query Item
+            const { resources } = await container.items.query({
+                query: "SELECT * from c WHERE c.id = @id",
+                parameters: [{ name: "@id", value: id }]
+            }).fetchAll();
+
+            if (resources.length === 0) return null;
+            const existingItem = resources[0];
+            const updatedItem = { ...existingItem, ...updates, lastUpdated: new Date().toISOString() };
+
+            // 2. Replace using Category PK
+            const { resource } = await container.item(id, existingItem.category).replace(updatedItem);
+            // Log
+            this.logActivity("System", "updated item", existingItem.name, 'update', section);
+            return resource as StockItem;
+
+        } catch (error) {
+            console.error("Failed to update in Azure:", error);
+            return null;
+        }
+    }
+
+    async deleteItem(id: string, section: string): Promise<boolean> {
+        if (!this.isConnected || !this.client) return false;
+        try {
+            const container = this.getContainer(section);
+            if (!container) return false;
+
+            // 1. Need category for PK delete
+            const { resources } = await container.items.query({
+                query: "SELECT * from c WHERE c.id = @id",
+                parameters: [{ name: "@id", value: id }]
+            }).fetchAll();
+
+            if (resources.length === 0) return false;
+
+            await container.item(id, resources[0].category).delete();
+            // Log
+            this.logActivity("System", "deleted item", resources[0].name, 'delete', section);
+            return true;
+        } catch (error) {
+            console.error("Failed to delete from Azure:", error);
+            return false;
+        }
     }
 }
 

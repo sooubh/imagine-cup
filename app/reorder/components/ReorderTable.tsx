@@ -1,8 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import stockData from '@/data/sampleStockData.json';
-import { filterStockData, getStockStatus, isLifeSaving, isLowLeadTime, StockItem } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
 import { useMemo } from 'react';
 import { ActionMenu } from './ActionMenu';
 
@@ -17,21 +16,13 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
   const searchParams = useSearchParams();
 
   const filteredItems = useMemo(() => {
-    const filters = {
-      search: searchParams.get('search') || '',
-      criticalOnly: searchParams.get('criticalOnly') === 'true',
-      lowLeadTime: searchParams.get('lowLeadTime') === 'true',
-      lifeSaving: searchParams.get('lifeSaving') === 'true',
-      dateRange: 'all', // Not used here but required by interface
-      category: 'all',
-      status: 'all',
-      location: 'all'
-    };
-
-    return filterStockData(stockData as StockItem[], filters);
+    // Simplified filtering for now as we transition to Azure Data
+    // Ideally this component should receive 'items' as a prop instead of importing mocked data
+    const items: StockItem[] = []; // TODO: Pass real items from parent
+    return items;
   }, [searchParams]);
 
-  const allItemIds = useMemo(() => filteredItems.map(i => `${i.item_id}-${i.location_id}`), [filteredItems]);
+  const allItemIds = useMemo(() => filteredItems.map(i => `${i.id}-${i.section}`), [filteredItems]);
   const isAllSelected = allItemIds.length > 0 && allItemIds.every(id => selectedIds.includes(id));
   const isSomeSelected = selectedIds.length > 0 && !isAllSelected;
 
@@ -77,10 +68,11 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => {
-                const id = `${item.item_id}-${item.location_id}`;
+                const id = `${item.id}-${item.section}`;
                 const isSelected = selectedIds.includes(id);
-                const status = getStockStatus(item.closing_stock, item.opening_stock);
-                const urgencyScore = Math.min(100, Math.round((1 - (item.closing_stock / item.opening_stock)) * 100));
+                const openingStock = 100; // Mock Max
+                const status = item.quantity <= 10 ? 'critical' : item.quantity <= 30 ? 'low' : 'stable';
+                const urgencyScore = Math.min(100, Math.round((1 - (item.quantity / openingStock)) * 100));
 
                 return (
                   <tr
@@ -98,10 +90,10 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col">
-                        <span className="font-bold text-neutral-dark dark:text-white group-hover:text-primary transition-colors">{item.item_name}</span>
+                        <span className="font-bold text-neutral-dark dark:text-white group-hover:text-primary transition-colors">{item.name}</span>
                         <span className="text-xs text-neutral-500 font-mono flex items-center gap-2">
-                          SKU: {item.item_id}
-                          {isLifeSaving(item) && (
+                          SKU: {item.id}
+                          {item.category === 'Medication' && (
                             <span className="inline-flex items-center text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 px-1.5 py-0.5 rounded ring-1 ring-blue-500/20">LIFE-SAVING</span>
                           )}
                         </span>
@@ -110,7 +102,7 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <span className="material-symbols-outlined text-neutral-500 text-lg">location_on</span>
-                        <span className="text-sm text-neutral-dark dark:text-white">{item.location_name}</span>
+                        <span className="text-sm text-neutral-dark dark:text-white">{item.section}</span>
                       </div>
                     </td>
                     <td className="p-4">
@@ -132,7 +124,7 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
                       )}
                     </td>
                     <td className="p-4 text-right font-mono font-medium text-neutral-dark dark:text-white">
-                      {(item.opening_stock - item.closing_stock).toLocaleString()}
+                      {(openingStock - item.quantity).toLocaleString()}
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col gap-1">

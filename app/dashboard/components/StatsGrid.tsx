@@ -2,11 +2,15 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import stockData from '@/data/sampleStockData.json';
 import { filterStockData, getStockStatus } from '../lib/utils';
 import { useMemo } from 'react';
+import { StockItem } from '@/lib/azureDefaults';
 
-export function StatsGrid() {
+interface StatsGridProps {
+  items: StockItem[];
+}
+
+export function StatsGrid({ items }: StatsGridProps) {
   const searchParams = useSearchParams();
 
   const stats = useMemo(() => {
@@ -18,27 +22,48 @@ export function StatsGrid() {
       view: searchParams.get('view') || 'district',
     };
 
-    const filtered = filterStockData(stockData, filters);
+    const filtered = filterStockData(items, filters);
 
     // Metrics calculation
     const totalItems = filtered.length;
     const itemsAtRisk = filtered.filter(i => {
-      const s = getStockStatus(i.closing_stock, i.opening_stock);
+      const s = getStockStatus(i.quantity, 0); // Simplified status check if opening stock missing
       return s === 'critical' || s === 'low';
     }).length;
 
-    const avgDayStockVal = filtered.reduce((acc, curr) => {
-      const days = curr.avg_daily_issue > 0 ? curr.closing_stock / curr.avg_daily_issue : 0;
-      return acc + days;
-    }, 0);
-    const avgDaysStock = totalItems > 0 ? Math.round(avgDayStockVal / totalItems) : 0;
+    // Calculate generic stock level for "Avg Days" proxy
+    const avgDaysStock = useMemo(() => {
+        if (totalItems === 0) return 0;
+        
+        let totalDays = 0;
+        filtered.forEach(item => {
+            // Heuristic: Estimate daily usage based on category
+            let dailyUsage = 2; // Default
+            const cat = (item.category || "").toLowerCase();
+            if (cat.includes('medicine')) dailyUsage = 10;
+            else if (cat.includes('ppe')) dailyUsage = 50;
+            else if (cat.includes('device') || cat.includes('machine')) dailyUsage = 0.5;
+            else if (cat.includes('consumable')) dailyUsage = 20;
+
+            const days = item.quantity / dailyUsage;
+            totalDays += days;
+        });
+
+        return Math.round(totalDays / totalItems);
+    }, [filtered, totalItems]);
+
+    const stockDiff = avgDaysStock - 30; // Compare to 30-day baseline
+    const stockTrend = stockDiff > 0 ? `+${stockDiff} days` : `${stockDiff} days`;
+    const stockTrendColor = stockDiff < 0 ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-green-600 bg-green-100 dark:bg-green-900/30';
 
     return {
       totalItems,
       itemsAtRisk,
-      avgDaysStock
+      avgDaysStock,
+      stockTrend,
+      stockTrendColor
     };
-  }, [searchParams]);
+  }, [searchParams, items]);
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -72,7 +97,7 @@ export function StatsGrid() {
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.avgDaysStock} <span className="text-lg font-normal text-neutral-500">Days</span></span>
-          <span className="text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">-2 days</span>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${stats.stockTrendColor}`}>{stats.stockTrend}</span>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { StockItem } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
 
 interface EditItemModalProps {
     item: StockItem;
@@ -11,7 +11,7 @@ interface EditItemModalProps {
 
 export function EditItemModal({ item, onClose, onSave }: EditItemModalProps) {
     const [formData, setFormData] = useState({
-        suggestedQty: item.opening_stock - item.closing_stock,
+        suggestedQty: 50 - item.quantity, // Simple logic: Top up to 50
         priority: 'high',
         notes: ''
     });
@@ -19,7 +19,7 @@ export function EditItemModal({ item, onClose, onSave }: EditItemModalProps) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // In a real app, we'd send data to API
-        console.log('Saving changes for:', item.item_name, formData);
+        console.log('Saving changes for:', item.name, formData);
         onSave?.({ ...item }); // In mock, just returning same item
         onClose();
     };
@@ -50,7 +50,7 @@ export function EditItemModal({ item, onClose, onSave }: EditItemModalProps) {
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     <div className="bg-neutral-50 dark:bg-black/20 p-4 rounded-2xl border border-neutral-100 dark:border-neutral-800 mb-6">
                         <span className="text-[10px] uppercase font-black text-neutral-400 block mb-1">Editing Item</span>
-                        <span className="text-base font-bold text-neutral-dark dark:text-white uppercase">{item.item_name} at {item.location_name}</span>
+                        <span className="text-base font-bold text-neutral-dark dark:text-white uppercase">{item.name} at {item.section}</span>
                     </div>
 
                     <div className="space-y-4">

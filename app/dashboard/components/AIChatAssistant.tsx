@@ -35,11 +35,8 @@ export function AIChatAssistant() {
     setLoading(true);
 
     try {
-      // Get context (in a real app, you might optimize this)
-      const items = await azureService.getAllItems();
-      const context = JSON.stringify(items.map(i => `${i.name}: ${i.quantity} (${i.status})`));
-
-      const response = await chatWithDataAction(userMsg.content, context);
+      // Server generates context automatically now
+      const response = await chatWithDataAction(userMsg.content);
       
       const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: response };
       setMessages(prev => [...prev, aiMsg]);

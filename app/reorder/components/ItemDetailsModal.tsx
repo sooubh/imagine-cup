@@ -1,6 +1,6 @@
 'use client';
 
-import { StockItem, getStockStatus } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
 
 interface ItemDetailsModalProps {
     item: StockItem;
@@ -8,9 +8,11 @@ interface ItemDetailsModalProps {
 }
 
 export function ItemDetailsModal({ item, onClose }: ItemDetailsModalProps) {
-    const status = getStockStatus(item.closing_stock, item.opening_stock);
-    const consumption = item.opening_stock - item.closing_stock;
-    const stockLevelPercent = Math.round((item.closing_stock / item.opening_stock) * 100);
+    const openingStock = 100; // Mock Max Capacity for visualization
+    const currentStock = item.quantity;
+    const stockLevelPercent = Math.round((currentStock / openingStock) * 100);
+    const status = currentStock <= 10 ? 'critical' : currentStock <= 30 ? 'low' : 'good';
+    const consumption = openingStock - currentStock;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -22,8 +24,8 @@ export function ItemDetailsModal({ item, onClose }: ItemDetailsModalProps) {
                 <div className="p-6 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-start bg-neutral-50/50 dark:bg-black/20">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h2 className="text-2xl font-black text-neutral-dark dark:text-white uppercase tracking-tight">{item.item_name}</h2>
-                            <span className="text-xs font-mono bg-neutral-200 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-500 uppercase">#{item.item_id}</span>
+                            <h2 className="text-2xl font-black text-neutral-dark dark:text-white uppercase tracking-tight">{item.name}</h2>
+                            <span className="text-xs font-mono bg-neutral-200 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-500 uppercase">#{item.id}</span>
                         </div>
                         <p className="text-sm text-neutral-500 flex items-center gap-2">
                             <span className="material-symbols-outlined text-base">category</span>
@@ -46,7 +48,7 @@ export function ItemDetailsModal({ item, onClose }: ItemDetailsModalProps) {
                             <div>
                                 <label className="text-[10px] uppercase tracking-widest font-black text-neutral-400 block mb-3">Live Stock Status</label>
                                 <div className="flex items-end gap-3 mb-2">
-                                    <span className="text-4xl font-black text-neutral-dark dark:text-white leading-none">{item.closing_stock.toLocaleString()}</span>
+                                    <span className="text-4xl font-black text-neutral-dark dark:text-white leading-none">{currentStock.toLocaleString()}</span>
                                     <span className="text-neutral-500 font-bold mb-1">units remaining</span>
                                 </div>
                                 {/* Progress Bar */}
@@ -58,7 +60,7 @@ export function ItemDetailsModal({ item, onClose }: ItemDetailsModalProps) {
                                     ></div>
                                 </div>
                                 <div className="flex justify-between text-[10px] font-bold uppercase">
-                                    <span className="text-neutral-400">Total Capacity: {item.opening_stock.toLocaleString()}</span>
+                                    <span className="text-neutral-400">Total Capacity: {openingStock.toLocaleString()}</span>
                                     <span className={status === 'critical' ? 'text-red-500' : status === 'low' ? 'text-orange-500' : 'text-primary'}>
                                         {stockLevelPercent}% Available
                                     </span>
@@ -84,7 +86,7 @@ export function ItemDetailsModal({ item, onClose }: ItemDetailsModalProps) {
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-primary/5 border border-primary/20">
                                     <span className="material-symbols-outlined text-primary text-2xl">location_on</span>
                                     <div>
-                                        <h4 className="font-bold text-neutral-dark dark:text-white leading-tight mb-1">{item.location_name}</h4>
+                                        <h4 className="font-bold text-neutral-dark dark:text-white leading-tight mb-1">{item.section}</h4>
                                         <p className="text-xs text-neutral-500 leading-relaxed italic">Last updated: 45 minutes ago at 14:30 PM (Local Time)</p>
                                     </div>
                                 </div>

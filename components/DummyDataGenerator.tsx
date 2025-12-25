@@ -1,116 +1,116 @@
 "use client";
 
-import { useState } from "react";
-import { Server, Database, CheckCircle, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { SIMULATED_USERS, UserProfile } from "@/lib/auth";
+import { Database, Server } from "lucide-react";
 
 export default function DummyDataGenerator() {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [progress, setProgress] = useState(0);
 
-  const categories = ["PPE", "Medication", "Equipment", "General"];
-  const ITEMS_PER_CATEGORY = 100;
+  useEffect(() => {
+    // Client-side cookie reading to get current user
+    const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+    }
+    const userId = getCookie('simulated_user_id');
+    if (userId) {
+        const foundUser = SIMULATED_USERS.find(u => u.id === userId);
+        if (foundUser) setUser(foundUser);
+    }
+  }, []);
 
-  const generateRandomItem = (category: string, index: number) => {
-    const prefixes = ["Premium", "Standard", "Basic", "Advanced", "Ultra"];
-    const baseNames: Record<string, string[]> = {
-      PPE: ["Mask", "Gloves", "Gown", "Face Shield", "Hazmat Suit", "Boot Covers"],
-      Medication: ["Antibiotics", "Painkillers", "Insulin", "Vaccine", "Antiviral", "Vitamins"],
-      Equipment: ["Ventilator", "Monitor", "Stethoscope", "Thermometer", "BP Cuff", "Syringe Pump"],
-      General: ["Bandages", "Gauze", "Sanitizer", "Disinfectant", "Bed Sheets", "Towels"]
-    };
+  const generateItemsForUser = (targetUser: UserProfile) => {
+    const categories = ['Medicine', 'PPE', 'Equipment', 'Supplies'];
+    const items = [];
     
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    const base = baseNames[category][Math.floor(Math.random() * baseNames[category].length)];
-    
-    return {
-      name: `${prefix} ${base} type-${Math.floor(Math.random() * 1000)}`,
-      category,
-      quantity: Math.floor(Math.random() * 500),
-      price: Number((Math.random() * 100 + 1).toFixed(2)),
-    };
+    for (let i = 0; i < 15; i++) {
+        const cat = categories[Math.floor(Math.random() * categories.length)];
+        const names = cat === 'Medicine' ? ['Paracetamol', 'Insulin', 'Antibiotics', 'Vaccine', 'Syrup'] :
+                      cat === 'PPE' ? ['Masks', 'Gloves', 'Gowns', 'Shields'] :
+                      cat === 'Equipment' ? ['Stethoscope', 'BP Monitor', 'Thermometer'] : ['Bandages', 'Cotton', 'Syringes'];
+        
+        const name = names[Math.floor(Math.random() * names.length)] + ` (${targetUser.section} - ${i+1})`;
+        
+        items.push({
+            name: name,
+            category: cat,
+            quantity: Math.floor(Math.random() * 500),
+            price: Number((Math.random() * 50 + 1).toFixed(2)),
+            ownerId: targetUser.id,
+            section: targetUser.section
+        });
+    }
+    return items;
   };
 
-  const handleGenerate = async () => {
-    if (!confirm("This will add 400+ items to your database. Continue?")) return;
-    
+  const handleSeed = async () => {
+    if (!user) return;
     setLoading(true);
-    setStatus("Starting generation...");
-    setProgress(0);
-    
-    let successCount = 0;
-    const totalItems = categories.length * ITEMS_PER_CATEGORY;
+    setStatus("Generating data...");
 
     try {
-      for (const category of categories) {
-        for (let i = 0; i < ITEMS_PER_CATEGORY; i++) {
-          const item = generateRandomItem(category, i);
-          
-          try {
-            const res = await fetch("/api/items", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(item),
-            });
-            
-            if (res.ok) successCount++;
-          } catch (e) {
-            console.error("Failed to add dummy item", e);
-          }
+        let targets: UserProfile[] = [];
 
-          const currentProgress = ((successCount / totalItems) * 100);
-          setProgress(Math.round(currentProgress));
-          setStatus(`Generated ${successCount} / ${totalItems} items...`);
+        // If on Add Item Page, we usually just want to populate data for THIS logged in user context
+        // regardless of if they are admin or retailer? 
+        // Admin likely wants to add data to their *own* logical view or manage.
+        // Let's stick to the consistent logic: Admin seeds for all, Retailer for self.
+        
+        if (user.role === 'admin') {
+            targets = SIMULATED_USERS.filter(u => u.role === 'retailer' && u.section === user.section);
+        } else {
+            targets = [user];
         }
-      }
-      setStatus(`Completed! Added ${successCount} items.`);
-    } catch (error) {
-      setStatus("Error during generation.");
+
+        let totalAdded = 0;
+        for (const target of targets) {
+            const items = generateItemsForUser(target);
+            for (const item of items) {
+                await fetch("/api/items", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(item),
+                });
+            }
+            totalAdded += items.length;
+        }
+        
+        setStatus(`Successfully added ${totalAdded} items!`);
+        setTimeout(() => setStatus(""), 5000);
+        // Optional: refresh page to see items? but this is an add page.
+    } catch (err) {
+        console.error(err);
+        setStatus("Error generating data.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
+  if (!user) return null;
+
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="p-2 bg-purple-500/20 rounded-lg">
-          <Database className="w-6 h-6 text-purple-400" />
+    <div className="w-full max-w-2xl mt-8 pt-8 border-t border-white/10">
+        <div className="flex items-center justify-between mb-4">
+            <div>
+                <h3 className="text-lg font-semibold text-gray-300">Quick Actions</h3>
+                <p className="text-sm text-gray-500">Helpers for development</p>
+            </div>
         </div>
-        <div>
-          <h3 className="text-xl font-bold text-white">Developer Tools</h3>
-          <p className="text-gray-400 text-sm">Populate database for testing</p>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between bg-black/20 p-4 rounded-lg">
-          <div className="text-sm text-gray-300">
-            <span className="font-bold text-white">Batch Generator:</span> Adds 100 items for each category (PPE, Medication, Equipment, General).
-          </div>
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Server className="w-4 h-4" />}
-            {loading ? "Generating..." : "Generate Dummy Data"}
-          </button>
-        </div>
-
-        {loading && (
-          <div className="w-full bg-gray-700 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
-            <div className="bg-purple-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
-          </div>
-        )}
         
-        {status && (
-          <p className={`text-sm ${status.includes("Error") ? "text-red-400" : "text-green-400"} flex items-center gap-2`}>
-             {status.includes("Completed") && <CheckCircle className="w-4 h-4" />}
-             {status}
-          </p>
-        )}
-      </div>
+        <button 
+            type="button"
+            onClick={handleSeed}
+            disabled={loading}
+            className="w-full py-4 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all flex items-center justify-center gap-2 group"
+        >
+            {loading ? <Server className="animate-pulse w-5 h-5" /> : <Database className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+            {loading ? "Adding Dummy Data..." : `Generate Safe Dummy Data for ${user.section}`}
+        </button>
+        {status && <p className="text-center text-green-400 mt-2 text-sm">{status}</p>}
     </div>
   );
 }

@@ -3,10 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Filter, X, Check, ChevronDown, Calendar, Tag, Activity, MapPin } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import stockData from '@/data/sampleStockData.json';
-import { StockItem } from '../lib/utils';
-import { useMemo } from 'react';
-
 export function FilterPopover() {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -21,12 +17,10 @@ export function FilterPopover() {
         location: searchParams.get('location') || 'all',
     });
 
-    const options = useMemo(() => {
-        const uniqueLocations = Array.from(new Set((stockData as StockItem[]).map(item => item.location_name))).sort();
-        // Extract categories if needed, or keep hardcoded if we want to show specific business categories
-        const uniqueCategories = Array.from(new Set((stockData as StockItem[]).map(item => item.category))).sort();
-        return { locations: uniqueLocations, categories: uniqueCategories };
-    }, []);
+    const options = {
+        locations: ["PSD", "Hospital", "NGO"],
+        categories: ["General", "PPE", "Medication", "Equipment", "Supplies"]
+    };
 
     // Sync state with URL params when they change externally (e.g. back button)
     useEffect(() => {
@@ -132,7 +126,7 @@ export function FilterPopover() {
                                 <Tag className="w-3.5 h-3.5" /> Category
                             </label>
                             <div className="flex flex-wrap gap-2">
-                                {['all', 'Medicine', 'Equipment', 'Supplies'].map((cat) => (
+                                {['all', ...options.categories].map((cat) => (
                                     <button
                                         key={cat}
                                         onClick={() => updateFilters({ ...filters, category: cat })}
