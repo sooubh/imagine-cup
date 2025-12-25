@@ -6,21 +6,37 @@ import { useMemo } from 'react';
 import { ActionMenu } from './ActionMenu';
 
 interface ReorderTableProps {
+  items: StockItem[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onViewItem?: (item: StockItem) => void;
   onEditItem?: (item: StockItem) => void;
 }
 
-export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEditItem }: ReorderTableProps) {
+export function ReorderTable({ items, selectedIds, onSelectionChange, onViewItem, onEditItem }: ReorderTableProps) {
   const searchParams = useSearchParams();
 
   const filteredItems = useMemo(() => {
-    // Simplified filtering for now as we transition to Azure Data
-    // Ideally this component should receive 'items' as a prop instead of importing mocked data
-    const items: StockItem[] = []; // TODO: Pass real items from parent
-    return items;
-  }, [searchParams]);
+    const search = searchParams.get('search')?.toLowerCase() || '';
+    const criticalOnly = searchParams.get('criticalOnly') === 'true';
+    const lifeSaving = searchParams.get('lifeSaving') === 'true';
+
+    return items.filter(item => {
+        // Search Filter
+        const matchesSearch = item.name.toLowerCase().includes(search) || item.id.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+
+        const minQty = item.minQuantity || 20;
+        const isCritical = item.quantity <= minQty;
+        const isLow = item.quantity <= (minQty * 1.5);
+
+        // Filters
+        if (criticalOnly && !isCritical) return false;
+        if (lifeSaving && item.category !== 'Medication') return false; // Crude 'Life Saving' proxy
+
+        return true;
+    });
+  }, [items, searchParams]);
 
   const allItemIds = useMemo(() => filteredItems.map(i => `${i.id}-${i.section}`), [filteredItems]);
   const isAllSelected = allItemIds.length > 0 && allItemIds.every(id => selectedIds.includes(id));
@@ -70,9 +86,16 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
               filteredItems.map((item) => {
                 const id = `${item.id}-${item.section}`;
                 const isSelected = selectedIds.includes(id);
-                const openingStock = 100; // Mock Max
-                const status = item.quantity <= 10 ? 'critical' : item.quantity <= 30 ? 'low' : 'stable';
-                const urgencyScore = Math.min(100, Math.round((1 - (item.quantity / openingStock)) * 100));
+                
+                // Logic based on minQuantity
+                const minQty = item.minQuantity || 20;
+                const capacity = 100; // Mock Max Capacity for visualization
+                
+                const status = item.quantity <= minQty ? 'critical' : item.quantity <= (minQty * 1.5) ? 'low' : 'stable';
+                
+                // Urgency: simple inverse of stock % of capacity, boosted if critical
+                const stockRatio = Math.min(1, item.quantity / capacity);
+                const urgencyScore = Math.max(0, Math.round((1 - stockRatio) * 100));
 
                 return (
                   <tr
@@ -80,6 +103,7 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
                     className={`group hover:bg-primary/5 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
                     onClick={() => toggleItem(id)}
                   >
+
                     <td className="p-4 pl-6 text-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -124,7 +148,7 @@ export function ReorderTable({ selectedIds, onSelectionChange, onViewItem, onEdi
                       )}
                     </td>
                     <td className="p-4 text-right font-mono font-medium text-neutral-dark dark:text-white">
-                      {(openingStock - item.quantity).toLocaleString()}
+                      {(capacity - item.quantity).toLocaleString()}
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col gap-1">

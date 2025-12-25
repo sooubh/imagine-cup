@@ -133,7 +133,7 @@ export function StockHeatmapTable({ limit, items }: StockHeatmapTableProps) {
               processedData.map((row) => (
                 <tr key={row.itemName} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
                   <td className="px-6 py-4 font-medium sticky left-0 z-10 bg-white dark:bg-[#2a2912] group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800 text-neutral-dark dark:text-white">
-                    <Link href={`/item/${row.details.id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
+                    <Link href={`/item/${row.details.id}?section=${Array.from(row.locations.values())[0].section}`} className="flex items-center gap-3 hover:text-primary transition-colors">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${row.details.category === 'Medicine' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
                         row.details.category === 'Supplies' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' :
                           'bg-purple-100 text-purple-600 dark:bg-purple-900/30'
@@ -200,6 +200,29 @@ export function StockHeatmapTable({ limit, items }: StockHeatmapTableProps) {
                   </td>
                   <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                          <button 
+                              onClick={async () => {
+                                  try {
+                                      const res = await fetch('/api/items/sell', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ itemId: row.details.id, section: Array.from(row.locations.values())[0].section })
+                                      });
+                                      if (res.ok) {
+                                          window.location.reload();
+                                      } else {
+                                          alert("Failed to sell item");
+                                      }
+                                  } catch (e) {
+                                      console.error(e);
+                                      alert("Error selling item");
+                                  }
+                              }}
+                              className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-green-600" 
+                              title="Sell 1 Unit"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">shopping_cart_checkout</span>
+                          </button>
                           <Link href={`/dashboard/inventory/edit/${row.details.id}`} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors text-blue-500" title="Edit Item">
                               <span className="material-symbols-outlined text-[18px]">edit</span>
                           </Link>

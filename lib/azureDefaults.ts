@@ -10,7 +10,12 @@ export interface StockItem {
     status: "In Stock" | "Low Stock" | "Out of Stock";
     lastUpdated: string;
     expiryDate?: string; // ISO Date String
+    manufacturingDate?: string; // ISO Date String
+    batchNumber?: string;
+    supplier?: string;
+    description?: string;
     unit?: string;       // e.g., 'box', 'vial', 'kg'
+    minQuantity?: number; // Threshold for reorder alert
     ownerId: string;
     section: 'PSD' | 'Hospital' | 'NGO';
 }
@@ -172,6 +177,25 @@ class AzureInventoryService {
             all = [...all, ...items];
         }
         return all;
+    }
+
+    async getItem(id: string, section: string): Promise<StockItem | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.getContainer(section);
+            if (!container) return null;
+
+            const { resources } = await container.items.query({
+                query: "SELECT * from c WHERE c.id = @id",
+                parameters: [{ name: "@id", value: id }]
+            }).fetchAll();
+
+            if (resources.length === 0) return null;
+            return resources[0] as StockItem;
+        } catch (error) {
+            console.error("Failed to get item from Azure:", error);
+            return null;
+        }
     }
 
     async addItem(item: Omit<StockItem, "id" | "lastUpdated">): Promise<StockItem> {

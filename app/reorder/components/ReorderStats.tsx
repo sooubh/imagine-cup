@@ -4,20 +4,32 @@ import { useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { StockItem } from '@/lib/azureDefaults';
 
-export function ReorderStats() {
+interface ReorderStatsProps {
+    items: StockItem[];
+}
+
+export function ReorderStats({ items }: ReorderStatsProps) {
   const searchParams = useSearchParams();
 
-  // Placeholder for real data fetching
   const stats = useMemo(() => {
-    // TODO: Fetch real items from Context or API for stats
-    const filtered: StockItem[] = []; 
-    
-    // Mock calculation for demonstration until data is wired up
-    const atRisk = 12; 
-    const totalValue = 15420;
+    // Determine status based on minQuantity
+    const atRiskItems = items.filter(item => {
+        const minQty = item.minQuantity || 20;
+        return item.quantity <= (minQty * 1.5); // Low or Critical
+    });
+
+    const atRisk = atRiskItems.length;
+
+    // Calculate value of needed stock (Targeting ~100 units or 3*minQty as 'safe' level)
+    // Simplified: Cost to bring everything up to 100
+    const totalValue = atRiskItems.reduce((acc, item) => {
+      const target = 100; // Mock Max Capacity
+      const missing = Math.max(0, target - item.quantity);
+      return acc + (missing * item.price);
+    }, 0);
 
     return { atRisk, totalValue };
-  }, [searchParams]);
+  }, [items]);
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">

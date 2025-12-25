@@ -9,11 +9,19 @@ import { ItemDetailsModal } from './ItemDetailsModal';
 import { EditItemModal } from './EditItemModal';
 import { StockItem } from '@/lib/azureDefaults';
 
-export function ReorderPageContent() {
+interface ReorderPageContentProps {
+    initialItems: StockItem[];
+}
+
+export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showFeedback, setShowFeedback] = useState(false);
     const [activeItem, setActiveItem] = useState<StockItem | null>(null);
     const [modalMode, setModalMode] = useState<'edit' | 'details' | null>(null);
+
+    // Filter Logic Client-Side (or could be server-side, but client is smoother for filters)
+    // Actually, ReorderTable does filtering. We just pass raw items.
+
 
     const handleMarkOrdered = () => {
         if (selectedIds.length === 0) return;
@@ -49,9 +57,10 @@ export function ReorderPageContent() {
                     </div>
                 </div>
             )}
-            <ReorderStats />
+            <ReorderStats items={initialItems} />
             <ReorderFilters />
             <ReorderTable
+                items={initialItems}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 onViewItem={handleView}
