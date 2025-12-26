@@ -30,7 +30,7 @@ export default function SalesPage() {
     const fetchInventory = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/items'); // This returns ALL items (default behavior needs adjustment in real app maybe)
+            const res = await fetch('/api/items'); 
             const data = await res.json();
             if (Array.isArray(data)) {
                 setInventory(data);
@@ -41,6 +41,34 @@ export default function SalesPage() {
             setIsLoading(false);
         }
     };
+
+    // AI Integration: Listen for Add to Cart events
+    useEffect(() => {
+        const handleAIAddToCart = (e: any) => {
+            const itemsToAdd = e.detail; // Array of { itemName, quantity }
+            if (!Array.isArray(itemsToAdd)) return;
+
+            itemsToAdd.forEach((reqItem: any) => {
+                // Fuzzy match name
+                const matchedItem = inventory.find(inv => 
+                    inv.name.toLowerCase().includes(reqItem.itemName.toLowerCase())
+                );
+
+                if (matchedItem && matchedItem.quantity > 0) {
+                    setCart(prev => {
+                        const existing = prev.find(c => c.item.id === matchedItem.id);
+                        if (existing) {
+                             return prev.map(c => c.item.id === matchedItem.id ? { ...c, quantity: c.quantity + reqItem.quantity } : c);
+                        }
+                        return [...prev, { item: matchedItem, quantity: reqItem.quantity }];
+                    });
+                }
+            });
+        };
+
+        window.addEventListener('ledgerbot-add-to-cart', handleAIAddToCart);
+        return () => window.removeEventListener('ledgerbot-add-to-cart', handleAIAddToCart);
+    }, [inventory]);
 
     const filteredInventory = inventory.filter(item => 
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

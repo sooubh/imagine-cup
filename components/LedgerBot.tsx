@@ -10,7 +10,11 @@ import ChartRenderer from './ui/ChartRenderer';
 import { Bot, Send, X, Maximize2, Minimize2, Sparkles, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Assuming you have a cn utility, if not I'll just use template literals carefully or standard string concat
 
+import { useRouter, usePathname } from 'next/navigation';
+
 export function LedgerBot() {
+    const router = useRouter();
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false); // State for full screen
     const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +41,26 @@ export function LedgerBot() {
         setIsLoading(true);
 
         try {
-            const { reply } = await chatWithLedgerBot(userMsg.text);
+            const history = [...messages, userMsg];
+            // Pass pathname to server for context awareness
+            const response = await chatWithLedgerBot(history, pathname);
+            const { reply, redirectPath, clientAction } = response as { reply: string, redirectPath?: string, clientAction?: any };
             setMessages(prev => [...prev, { role: 'bot', text: reply }]);
+            
+            if (redirectPath) {
+                setTimeout(() => {
+                    router.push(redirectPath);
+                    setIsOpen(false); 
+                }, 1500); 
+            }
+
+            if (clientAction) {
+                // Dispatch custom event for page-specific handling
+                const event = new CustomEvent(`ledgerbot-${clientAction.type.toLowerCase().replace(/_/g, '-')}`, { 
+                    detail: clientAction.data 
+                });
+                window.dispatchEvent(event);
+            }
         } catch (e) {
             console.error("LedgerBot UI Error:", e);
             setMessages(prev => [...prev, { role: 'bot', text: "Sorry, I encountered an error. Please try again." }]);
