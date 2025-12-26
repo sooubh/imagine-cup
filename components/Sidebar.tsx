@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, AlertTriangle, FileText, Settings, BarChart3, RefreshCw, LogOut, Store } from 'lucide-react';
+import { Home, AlertTriangle, FileText, Settings, BarChart3, RefreshCw, LogOut, Store, CreditCard } from 'lucide-react';
 import { clsx } from 'clsx';
 import { SIMULATED_USERS, UserProfile } from '@/lib/auth';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Sales', href: '/sales', icon: CreditCard },
   { name: 'Reorder', href: '/reorder', icon: RefreshCw },
+  { name: 'Procurement', href: '/procurement', icon: FileText },
   { name: 'Stores', href: '/dashboard/stores', icon: Store },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
@@ -44,7 +46,7 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-center border-b border-slate-200 dark:border-neutral-800 px-6">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-indigo-600 dark:text-primary hover:opacity-80 transition-opacity">
           <BarChart3 className="h-6 w-6" />
-          <span>StockHealth AI</span>
+          <span>LedgerShield</span>
         </Link>
       </div>
       <nav className="flex-1 space-y-1 px-4 py-6">

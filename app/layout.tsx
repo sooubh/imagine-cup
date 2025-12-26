@@ -6,8 +6,8 @@ import { Providers } from './providers';
 import { ToastProvider } from './context/ToastContext';
 
 export const metadata: Metadata = {
-  title: 'StockHealth AI',
-  description: 'AI-Powered Stock Health & Early Warning System',
+  title: 'LedgerShield',
+  description: 'Smart Inventory & Finance Management',
 };
 
 export default function RootLayout({

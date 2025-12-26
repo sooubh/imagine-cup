@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import { azureService } from '@/lib/azureDefaults';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        const items = await azureService.getAllItems();
+        const { searchParams } = new URL(request.url);
+        const section = searchParams.get('section');
+
+        let items;
+        if (section) {
+            items = await azureService.getAllItems(section);
+        } else {
+            items = await azureService.getGlobalItems();
+        }
+
         return NextResponse.json(items);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });

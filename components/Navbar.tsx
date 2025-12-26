@@ -23,7 +23,7 @@ export function Navbar() {
             <div className="w-8 h-8 text-primary bg-neutral-dark rounded-lg flex items-center justify-center">
               <span className="material-symbols-outlined text-[24px]">health_metrics</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-neutral-dark dark:text-white">StockHealth AI</h1>
+            <h1 className="text-xl font-bold tracking-tight text-neutral-dark dark:text-white">LedgerShield</h1>
           </Link>
           <button className="md:hidden p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800">
             <span className="material-symbols-outlined">menu</span>
@@ -34,6 +34,9 @@ export function Navbar() {
         <nav className="hidden md:flex items-center gap-1 bg-neutral-100 dark:bg-[#23220f] p-1 rounded-full">
           <Link href="/dashboard" className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive('/dashboard') ? 'bg-white dark:bg-[#2a2912] text-neutral-dark dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'}`}>
             Dashboard
+          </Link>
+          <Link href="/sales" className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive('/sales') ? 'bg-white dark:bg-[#2a2912] text-neutral-dark dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'}`}>
+            Sales
           </Link>
           <Link href="/reorder" className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive('/reorder') ? 'bg-white dark:bg-[#2a2912] text-neutral-dark dark:text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'}`}>
             Reorder

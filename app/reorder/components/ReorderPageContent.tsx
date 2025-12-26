@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ReorderStats } from './ReorderStats';
 import { ReorderFilters } from './ReorderFilters';
 import { ReorderTable } from './ReorderTable';
@@ -8,6 +9,7 @@ import { StickyActionFooter } from './StickyActionFooter';
 import { ItemDetailsModal } from './ItemDetailsModal';
 import { EditItemModal } from './EditItemModal';
 import { StockItem } from '@/lib/azureDefaults';
+import { markItemsAsOrdered } from '@/app/actions/procurement';
 
 interface ReorderPageContentProps {
     initialItems: StockItem[];
@@ -23,18 +25,33 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
     // Actually, ReorderTable does filtering. We just pass raw items.
 
 
-    const handleMarkOrdered = () => {
+    const router = useRouter();
+
+    const handleMarkOrdered = async () => {
         if (selectedIds.length === 0) return;
 
-        // Mock action
-        console.log('Items marked as ordered:', selectedIds);
+        try {
+            const success = await markItemsAsOrdered(selectedIds);
+            if (success) {
+                setShowFeedback(true);
+                setSelectedIds([]);
+                setTimeout(() => {
+                    setShowFeedback(false);
+                }, 3000);
+            } else {
+                alert("Failed to mark items as ordered. Please try again.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("An error occurred.");
+        }
+    };
 
-        setShowFeedback(true);
-        setSelectedIds([]);
-
-        setTimeout(() => {
-            setShowFeedback(false);
-        }, 3000);
+    const handleSendToProcurement = () => {
+        if (selectedIds.length === 0) return;
+        const queryParams = new URLSearchParams();
+        queryParams.set('items', selectedIds.join(','));
+        router.push(`/procurement?${queryParams.toString()}`);
     };
 
     const handleView = (item: StockItem) => {
@@ -69,7 +86,7 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
             <StickyActionFooter
                 selectedCount={selectedIds.length}
                 onMarkOrdered={handleMarkOrdered}
-                onSendToProcurement={() => console.log('Sending to procurement:', selectedIds)}
+                onSendToProcurement={handleSendToProcurement}
             />
 
             {activeItem && modalMode === 'details' && (

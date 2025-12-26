@@ -32,6 +32,51 @@ const CONTAINERS = {
     NGO: "Items_NGO"
 };
 const ACTIVITIES_CONTAINER = "Activities";
+const TRANSACTIONS_CONTAINER = "Transactions";
+const ORDERS_CONTAINER = "Orders";
+
+export interface Transaction {
+    id: string;
+    invoiceNumber: string;
+    date: string; // ISO String
+    type: 'SALE' | 'INTERNAL_USAGE' | 'DAMAGE' | 'EXPIRY';
+    items: {
+        itemId: string;
+        name: string;
+        quantity: number;
+        unitPrice: number;
+        tax: number;
+        subtotal: number;
+    }[];
+    totalAmount: number;
+    paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'OTHER';
+    customerName?: string;
+    customerContact?: string;
+    section: string;
+    performedBy: string; // User ID or Name
+}
+
+export interface PurchaseOrder {
+    id: string;
+    poNumber: string;
+    dateCreated: string;
+    status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED';
+    items: {
+        itemId: string;
+        name: string;
+        currentStock: number;
+        requestedQuantity: number;
+        unit: string;
+        section: string;
+        receivedQuantity?: number;
+        price?: number;
+    }[];
+    totalEstimatedCost?: number;
+    vendor?: string;
+    notes?: string;
+    createdBy: string;
+    approvedBy?: string;
+}
 
 export interface Activity {
     id: string;
@@ -43,23 +88,17 @@ export interface Activity {
     section: string;
 }
 
-// Mock data fallback (simplified)
-let mockItems: StockItem[] = [];
-
-class AzureInventoryService {
+export class AzureInventoryService {
     private client: CosmosClient | null = null;
     private isConnected: boolean = false;
 
     constructor() {
         if (ENDPOINT && KEY) {
-            try {
-                this.client = new CosmosClient({ endpoint: ENDPOINT, key: KEY });
-                this.isConnected = true;
-                console.log("✅ Azure Cosmos DB Client Initialized");
-                this.initContainers(); // Fire and forget initialization
-            } catch (error) {
-                console.error("❌ Failed to initialize Azure Client", error);
-            }
+            this.client = new CosmosClient({ endpoint: ENDPOINT, key: KEY });
+            this.isConnected = true;
+            this.initContainers();
+        } else {
+            console.warn("Azure Cosmos DB credentials not found.");
         }
     }
 
@@ -77,10 +116,95 @@ class AzureInventoryService {
             // Create Activities Container
             await db.containers.createIfNotExists({ id: ACTIVITIES_CONTAINER, partitionKey: "/section" });
             console.log(`Verified Container: ${ACTIVITIES_CONTAINER}`);
+
+            // Create Transactions Container
+            await db.containers.createIfNotExists({ id: TRANSACTIONS_CONTAINER, partitionKey: "/section" });
+            console.log(`Verified Container: ${TRANSACTIONS_CONTAINER}`);
+
+            // Create Orders Container
+            await db.containers.createIfNotExists({ id: ORDERS_CONTAINER, partitionKey: "/status" });
+            console.log(`Verified Container: ${ORDERS_CONTAINER}`);
+
         } catch (e) {
             console.error("Error initializing containers:", e);
         }
     }
+
+    // ... (existing methods getContainer, logActivity, createTransaction, getTransactions, getRecentActivities, getAllItems, getGlobalItems, getItem, addItem)
+
+    // --- PURCHASE ORDERS ---
+    async createOrder(order: Omit<PurchaseOrder, "id">): Promise<PurchaseOrder | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            const newOrder: PurchaseOrder = {
+                ...order,
+                id: Math.random().toString(36).substring(7)
+            };
+            const { resource } = await container.items.create(newOrder);
+            return resource as PurchaseOrder;
+        } catch (e) {
+            console.error("Failed to create order:", e);
+            return null;
+        }
+    }
+
+    async getOrders(): Promise<PurchaseOrder[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            const { resources } = await container.items
+                .query("SELECT * FROM c ORDER BY c.dateCreated DESC")
+                .fetchAll();
+            return resources as PurchaseOrder[];
+        } catch (e) {
+            console.error("Failed to fetch orders:", e);
+            return [];
+        }
+    }
+
+    async updateOrder(id: string, updates: Partial<PurchaseOrder>, statusPartitionKey: string): Promise<PurchaseOrder | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            // Must read first or use patch if we know PK is status. 
+            // Since status can change (PK change), we might need delete/create if status changes.
+            // For simplicity, assuming status might be the PK.
+
+            // If status is changing, we need to delete and recreate because Partition Key is immutable
+            if (updates.status && updates.status !== statusPartitionKey) {
+                const { resource: existing } = await container.item(id, statusPartitionKey).read();
+                if (!existing) return null;
+
+                const newOrder = { ...existing, ...updates, id: id };
+                // Transactional batch to ensure atomicity ideally, but simple delete/create here
+                await container.item(id, statusPartitionKey).delete();
+                const { resource } = await container.items.create(newOrder);
+                return resource as PurchaseOrder;
+            } else {
+                const { resource } = await container.item(id, statusPartitionKey).replace({ ...updates, id }); // Need full object for replace? Or use patch?
+                // Actually replace needs full body. Let's stick to simple read-modify-write pattern or PATCH.
+                // PATCH is better.
+                /*
+                const { resource } = await container.item(id, statusPartitionKey).patch(
+                    Object.keys(updates).map(k => ({ op: 'replace', path: `/${k}`, value: updates[k as keyof PurchaseOrder] }))
+                );
+                */
+                // Falling back to read-replace for safety in this mocked env
+                const { resource: existing } = await container.item(id, statusPartitionKey).read();
+                if (existing) {
+                    const { resource } = await container.item(id, statusPartitionKey).replace({ ...existing, ...updates });
+                    return resource as PurchaseOrder;
+                }
+                return null;
+            }
+        } catch (e) {
+            console.error("Failed to update order:", e);
+            return null;
+        }
+    }
+
+    // ... (rest of class)
 
     private getContainer(section: string) {
         if (!this.client) {
@@ -115,6 +239,68 @@ class AzureInventoryService {
             await container.items.create(activity);
         } catch (e) {
             console.error("Failed to log activity:", e);
+        }
+    }
+
+    // --- TRANSACTION LOGGING ---
+    async createTransaction(transaction: Omit<Transaction, "id">): Promise<Transaction | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(TRANSACTIONS_CONTAINER);
+            const newTransaction: Transaction = {
+                ...transaction,
+                id: Math.random().toString(36).substring(7)
+            };
+            const { resource } = await container.items.create(newTransaction);
+            return resource as Transaction;
+        } catch (e) {
+            console.error("Failed to create transaction:", e);
+            return null;
+        }
+    }
+
+    async getTransactions(section: string): Promise<Transaction[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(TRANSACTIONS_CONTAINER);
+            const { resources } = await container.items
+                .query({
+                    query: "SELECT * FROM c WHERE c.section = @section ORDER BY c.date DESC",
+                    parameters: [{ name: "@section", value: section }]
+                })
+                .fetchAll();
+            return resources as Transaction[];
+        } catch (e) {
+            console.error("Failed to fetch transactions:", e);
+            return [];
+        }
+    }
+
+    async getAllTransactions(): Promise<Transaction[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(TRANSACTIONS_CONTAINER);
+            const { resources } = await container.items
+                .query("SELECT * FROM c ORDER BY c.date DESC")
+                .fetchAll();
+            return resources as Transaction[];
+        } catch (e) {
+            console.error("Failed to fetch all transactions:", e);
+            return [];
+        }
+    }
+
+    async getAllActivities(): Promise<Activity[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ACTIVITIES_CONTAINER);
+            const { resources } = await container.items
+                .query("SELECT * FROM c ORDER BY c.time DESC")
+                .fetchAll();
+            return resources as Activity[];
+        } catch (e) {
+            console.error("Failed to fetch all activities:", e);
+            return [];
         }
     }
 

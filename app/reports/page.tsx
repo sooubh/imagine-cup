@@ -1,11 +1,63 @@
 "use client";
+import { useState, useEffect } from 'react';
 import { ReportsTabs } from './components/ReportsTabs';
 import { CriticalReports } from './components/CriticalReports';
 import { RegionalComparison } from './components/RegionalComparison';
 import { DataSourcesWidget } from './components/DataSourcesWidget';
 import { UserManagementTable } from './components/UserManagementTable';
 
+// New Components
+import { SalesReport } from './components/SalesReport';
+import { InventoryReport } from './components/InventoryReport';
+import { TeamReport } from './components/TeamReport';
+import { ProcurementReport } from './components/ProcurementReport';
+
+// Actions
+import { getGlobalSalesData, getGlobalInventoryData, getGlobalTeamData, getGlobalProcurementData } from '@/app/actions/reports';
+import { Transaction, StockItem, Activity, PurchaseOrder } from '@/lib/azureDefaults';
+
 export default function ReportsPage() {
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Data States
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [inventory, setInventory] = useState<StockItem[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch Data on Tab Change (or initial load)
+  useEffect(() => {
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            // Overview needs Inventory data for Critical Reports
+            if (activeTab === 'overview' && inventory.length === 0) {
+                 // Optimization: We could have a lighter fetch for just stats, but fetching all items is simplest for now
+                 const data = await getGlobalInventoryData();
+                 setInventory(data);
+            } else if (activeTab === 'sales' && transactions.length === 0) {
+                const data = await getGlobalSalesData();
+                setTransactions(data);
+            } else if (activeTab === 'inventory' && inventory.length === 0) {
+                const data = await getGlobalInventoryData();
+                setInventory(data);
+            } else if (activeTab === 'team' && activities.length === 0) {
+                const data = await getGlobalTeamData();
+                setActivities(data);
+            } else if (activeTab === 'procurement' && orders.length === 0) {
+                const data = await getGlobalProcurementData();
+                setOrders(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch report data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchData();
+  }, [activeTab]);
+
   return (
     <div className="flex-1 flex flex-col items-center py-8 px-4 md:px-10 lg:px-20 max-w-[1600px] mx-auto w-full">
       <div className="w-full flex flex-col gap-8">
@@ -15,31 +67,46 @@ export default function ReportsPage() {
             <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tighter text-neutral-dark dark:text-white">Administration Console</h1>
             <p className="text-neutral-500 text-lg max-w-2xl">Manage critical reports, data integrations, and system access controls for your organization.</p>
           </div>
-          <div className="flex gap-3">
-            <button className="h-10 px-6 rounded-full bg-white dark:bg-[#23220f] border border-neutral-200 dark:border-neutral-700 text-sm font-bold hover:bg-neutral-100 dark:hover:bg-[#2c2b13] transition-colors text-neutral-dark dark:text-white">Documentation</button>
-            <button className="h-10 px-6 rounded-full bg-primary text-black text-sm font-bold hover:brightness-95 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              Export Audit Log
-            </button>
-          </div>
+          {/* Global Buttons if needed later */}
         </div>
         
         {/* Tabs Navigation */}
-        <ReportsTabs />
+        <ReportsTabs activeTab={activeTab} onTabChange={setActiveTab} />
         
-        {/* Content Area: Reports Tab Active */}
+        {/* Content Area */}
         <div className="flex flex-col gap-8">
-          {/* Critical Reports Section */}
-          <CriticalReports />
-          
-          {/* Location & Data Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <RegionalComparison />
-            <DataSourcesWidget />
-          </div>
-          
-          {/* User Management Preview */}
-          <UserManagementTable />
+            
+            {/* OVERVIEW TAB (Legacy + Dashboardy stuff) */}
+            {activeTab === 'overview' && (
+                <>
+                  <CriticalReports items={inventory} isLoading={isLoading} />
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <RegionalComparison />
+                    <DataSourcesWidget />
+                  </div>
+                  <UserManagementTable />
+                </>
+            )}
+
+            {/* SALES TAB */}
+            {activeTab === 'sales' && (
+                <SalesReport transactions={transactions} isLoading={isLoading} />
+            )}
+
+            {/* INVENTORY TAB */}
+            {activeTab === 'inventory' && (
+                <InventoryReport items={inventory} isLoading={isLoading} />
+            )}
+
+            {/* PROCUREMENT TAB */}
+            {activeTab === 'procurement' && (
+                <ProcurementReport orders={orders} isLoading={isLoading} />
+            )}
+
+            {/* TEAM TAB */}
+            {activeTab === 'team' && (
+                <TeamReport activities={activities} isLoading={isLoading} />
+            )}
         </div>
       </div>
     </div>
