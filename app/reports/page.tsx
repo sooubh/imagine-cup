@@ -16,24 +16,26 @@ import { ProcurementReport } from './components/ProcurementReport';
 import { getGlobalSalesData, getGlobalInventoryData, getGlobalTeamData, getGlobalProcurementData } from '@/app/actions/reports';
 import { Transaction, StockItem, Activity, PurchaseOrder } from '@/lib/azureDefaults';
 
+import { StaggerContainer, StaggerItem } from '@/components/animations/StaggerContainer';
+import { AnimatePresence } from 'framer-motion';
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('overview');
-  
-  // Data States
+  // ... state declarations ...
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventory, setInventory] = useState<StockItem[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch Data on Tab Change (or initial load)
+  // ... useEffect logic ...
   useEffect(() => {
-    const fetchData = async () => {
+     // ... (keep existing fetch logic)
+     const fetchData = async () => {
         setIsLoading(true);
         try {
             // Overview needs Inventory data for Critical Reports
             if (activeTab === 'overview' && inventory.length === 0) {
-                 // Optimization: We could have a lighter fetch for just stats, but fetching all items is simplest for now
                  const data = await getGlobalInventoryData();
                  setInventory(data);
             } else if (activeTab === 'sales' && transactions.length === 0) {
@@ -58,6 +60,7 @@ export default function ReportsPage() {
     fetchData();
   }, [activeTab]);
 
+
   return (
     <div className="flex-1 flex flex-col items-center py-8 px-4 md:px-10 lg:px-20 max-w-[1600px] mx-auto w-full">
       <div className="w-full flex flex-col gap-8">
@@ -74,40 +77,56 @@ export default function ReportsPage() {
         <ReportsTabs activeTab={activeTab} onTabChange={setActiveTab} />
         
         {/* Content Area */}
-        <div className="flex flex-col gap-8">
-            
-            {/* OVERVIEW TAB (Legacy + Dashboardy stuff) */}
-            {activeTab === 'overview' && (
-                <>
-                  <CriticalReports items={inventory} isLoading={isLoading} />
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <RegionalComparison />
-                    <DataSourcesWidget />
-                  </div>
-                  <UserManagementTable />
-                </>
-            )}
+        <AnimatePresence mode="wait">
+            <StaggerContainer key={activeTab} className="flex flex-col gap-8">
+                
+                {/* OVERVIEW TAB (Legacy + Dashboardy stuff) */}
+                {activeTab === 'overview' && (
+                    <>
+                    <StaggerItem>
+                       <CriticalReports items={inventory} isLoading={isLoading} />
+                    </StaggerItem>
+                    <StaggerItem>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <RegionalComparison />
+                        <DataSourcesWidget />
+                      </div>
+                    </StaggerItem>
+                    <StaggerItem>
+                      <UserManagementTable />
+                    </StaggerItem>
+                    </>
+                )}
 
-            {/* SALES TAB */}
-            {activeTab === 'sales' && (
-                <SalesReport transactions={transactions} isLoading={isLoading} />
-            )}
+                {/* SALES TAB */}
+                {activeTab === 'sales' && (
+                    <StaggerItem>
+                        <SalesReport transactions={transactions} isLoading={isLoading} />
+                    </StaggerItem>
+                )}
 
-            {/* INVENTORY TAB */}
-            {activeTab === 'inventory' && (
-                <InventoryReport items={inventory} isLoading={isLoading} />
-            )}
+                {/* INVENTORY TAB */}
+                {activeTab === 'inventory' && (
+                    <StaggerItem>
+                        <InventoryReport items={inventory} isLoading={isLoading} />
+                    </StaggerItem>
+                )}
 
-            {/* PROCUREMENT TAB */}
-            {activeTab === 'procurement' && (
-                <ProcurementReport orders={orders} isLoading={isLoading} />
-            )}
+                {/* PROCUREMENT TAB */}
+                {activeTab === 'procurement' && (
+                    <StaggerItem>
+                        <ProcurementReport orders={orders} isLoading={isLoading} />
+                    </StaggerItem>
+                )}
 
-            {/* TEAM TAB */}
-            {activeTab === 'team' && (
-                <TeamReport activities={activities} isLoading={isLoading} />
-            )}
-        </div>
+                {/* TEAM TAB */}
+                {activeTab === 'team' && (
+                    <StaggerItem>
+                        <TeamReport activities={activities} isLoading={isLoading} />
+                    </StaggerItem>
+                )}
+            </StaggerContainer>
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { Activity } from '@/lib/azureDefaults';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { ReportAIInsight } from './ReportAIInsight';
 
 interface TeamReportProps {
     activities: Activity[];
@@ -29,6 +30,10 @@ export function TeamReport({ activities, isLoading }: TeamReportProps) {
         return Object.entries(counts).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A';
     }
 
+    const contextData = teamMembers.map(m => 
+        `User ${m.name}: ${m.actionsCount} actions, last seen ${new Date(m.lastActive).toLocaleDateString()}. Top action: ${m.mostCommonAction}`
+    ).join('\n');
+
     const handleExportPDF = () => {
         const doc = new jsPDF();
         doc.text("Team Activity Report", 14, 22);
@@ -48,10 +53,12 @@ export function TeamReport({ activities, isLoading }: TeamReportProps) {
         doc.save('team_report.pdf');
     };
 
-    if (isLoading) return <div className="p-10 text-center">Loading Team Data...</div>;
+    if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Team Data...</div>;
 
     return (
         <div className="space-y-6">
+            <ReportAIInsight contextData={contextData} type="team" />
+
             <div className="flex justify-between items-center bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
                 <div>
                      <h2 className="text-2xl font-black text-neutral-dark dark:text-white mb-1">Active Team Members</h2>

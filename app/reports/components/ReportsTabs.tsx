@@ -1,39 +1,44 @@
+import { motion } from 'framer-motion';
+
 interface ReportsTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
-export function ReportsTabs({ activeTab, onTabChange }: ReportsTabsProps) {
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'sales', label: 'Sales Report' },
-    { id: 'inventory', label: 'Inventory Valuation' },
-    { id: 'procurement', label: 'Procurement' },
-    { id: 'team', label: 'Team Activity' },
-  ];
+const TABS = [
+  { id: 'overview', label: 'Overview', icon: 'dashboard' },
+  { id: 'sales', label: 'Sales & Revenue', icon: 'payments' },
+  { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
+  { id: 'procurement', label: 'Procurement', icon: 'shopping_cart' },
+  { id: 'team', label: 'Team Activity', icon: 'group' },
+];
 
+export function ReportsTabs({ activeTab, onTabChange }: ReportsTabsProps) {
   return (
-    <div className="w-full border-b border-neutral-100 dark:border-neutral-700 mb-8">
-      <nav aria-label="Tabs" className="flex gap-8 overflow-x-auto scrollbar-hide">
-        {tabs.map((tab) => (
-            <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className="group relative flex flex-col items-center pb-4 min-w-[100px] outline-none"
-            >
-                <span className={`text-sm font-bold transition-colors ${
-                    activeTab === tab.id 
-                    ? 'text-neutral-dark dark:text-white' 
-                    : 'text-neutral-500 hover:text-neutral-dark dark:hover:text-white'
-                }`}>
-                    {tab.label}
-                </span>
-                <span className={`absolute bottom-0 h-[3px] rounded-t-full bg-primary transition-all duration-300 ${
-                    activeTab === tab.id ? 'w-full' : 'w-0 group-hover:w-full'
-                }`}></span>
-            </button>
-        ))}
-      </nav>
+    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-1 w-full">
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors rounded-t-lg outline-none
+              ${isActive ? 'text-primary dark:text-white' : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'}
+            `}
+          >
+            <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+            {tab.label}
+            
+            {isActive && (
+              <motion.div
+                layoutId="activeTabUnderline"
+                className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-primary"
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

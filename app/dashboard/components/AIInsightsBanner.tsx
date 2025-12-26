@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { azureAIService, StockInsight } from '@/services/AzureAIService'; // Adjust path if needed
+import { StockInsight } from '@/services/AzureAIService'; // Type only
 import { getDashboardInsightAction } from '@/app/actions/ai';
-import { azureService } from '@/lib/azureDefaults';
 
 export function AIInsightsBanner() {
   const [insight, setInsight] = useState<StockInsight | null>(null);
@@ -13,12 +12,8 @@ export function AIInsightsBanner() {
   useEffect(() => {
     async function fetchInsight() {
       try {
-        // 1. Get raw data context
-        const items = await azureService.getAllItems();
-        const context = JSON.stringify(items.map(i => `${i.name}: ${i.quantity} (${i.status})`));
-        
-        // 2. Ask AI
-        const aiResponse = await getDashboardInsightAction(context);
+        // AI Action now handles data fetching securely
+        const aiResponse = await getDashboardInsightAction();
         if (aiResponse) setInsight(aiResponse);
       } catch (e) {
         console.error("Failed to load insight", e);

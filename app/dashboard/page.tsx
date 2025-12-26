@@ -4,7 +4,7 @@ import { AIInsightsBanner } from './components/AIInsightsBanner';
 import { StatsGrid } from './components/StatsGrid';
 import { StockHeatmapTable } from './components/StockHeatmapTable';
 import { AlertsSidebar } from './components/AlertsSidebar';
-import { AIChatAssistant } from './components/AIChatAssistant';
+
 import { RecentActivityFeed } from './components/RecentActivityFeed';
 
 import { azureService } from '@/lib/azureDefaults';
@@ -70,8 +70,7 @@ export default async function DashboardPage() {
         <RecentActivityFeed activities={recentActivities} />
       </div>
 
-      {/* Floating AI Chat */}
-      <AIChatAssistant />
+      {/* Floating AI Chat - Removed in favor of global LedgerBot */}
     </div>
   );
 }

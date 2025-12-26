@@ -4,6 +4,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Providers } from './providers';
 import { ToastProvider } from './context/ToastContext';
+import { LedgerBot } from '@/components/LedgerBot';
 
 export const metadata: Metadata = {
   title: 'LedgerShield',
@@ -28,6 +29,7 @@ export default function RootLayout({
           <ToastProvider>
             <Navbar />
             {children}
+            <LedgerBot />
           </ToastProvider>
         </Providers>
       </body>

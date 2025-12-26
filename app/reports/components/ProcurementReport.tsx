@@ -3,6 +3,7 @@
 import { PurchaseOrder } from '@/lib/azureDefaults';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { ReportAIInsight } from './ReportAIInsight';
 
 interface ProcurementReportProps {
     orders: PurchaseOrder[];
@@ -14,13 +15,14 @@ export function ProcurementReport({ orders, isLoading }: ProcurementReportProps)
     const pendingOrders = orders.filter(o => o.status === 'PENDING').length;
     const receivedOrders = orders.filter(o => o.status === 'RECEIVED').length;
     
-    // Calculate total spend (estimated from manual price or assuming if price exists)
-    // Since PurchaseOrder items have optional price, we sum what we have.
     const totalSpend = orders.reduce((sum, order) => {
-        // If order has totalEstimatedCost, use it. Else sum items.
         if (order.totalEstimatedCost) return sum + order.totalEstimatedCost;
         return sum + order.items.reduce((isum, item) => isum + ((item.price || 0) * item.requestedQuantity), 0);
     }, 0);
+
+    const contextData = orders.slice(0, 20).map(o => 
+        `PO #${o.poNumber}: Status ${o.status}, Vendor ${o.vendor || 'Unknown'}, Total $${(o.totalEstimatedCost || 0).toFixed(2)}`
+    ).join('\n');
 
     const handleExportPDF = () => {
         const doc = new jsPDF();
@@ -69,10 +71,12 @@ export function ProcurementReport({ orders, isLoading }: ProcurementReportProps)
         document.body.removeChild(link);
     };
 
-    if (isLoading) return <div className="p-10 text-center">Loading Procurement Data...</div>;
+    if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Procurement Data...</div>;
 
     return (
         <div className="space-y-6">
+            <ReportAIInsight contextData={contextData} type="procurement" />
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                  <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
                      <p className="text-neutral-500 text-sm mb-1">Total Orders Placed</p>

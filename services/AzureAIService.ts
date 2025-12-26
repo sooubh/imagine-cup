@@ -50,7 +50,7 @@ export class AzureAIService {
         if (!this.client) this.initializeClient();
 
         if (!this.client) {
-            return this.getMockInsight();
+            return this.generateOfflineInsight(inventoryCtx);
         }
 
         try {
@@ -85,7 +85,7 @@ export class AzureAIService {
 
         } catch (error) {
             console.error("Azure AI Error:", error);
-            return this.getMockInsight();
+            return this.generateOfflineInsight(inventoryCtx);
         }
     }
 
@@ -113,13 +113,91 @@ export class AzureAIService {
         }
     }
 
-    private getMockInsight(): StockInsight {
-        return {
-            sentiment: "critical",
-            summary: "5 critical medicines likely to run out in 6 days across 3 locations.",
-            actionableSuggestion: "Re-route stock from District Warehouse A to cover the deficit.",
-            affectedItems: ["Surgical Masks", "Antibiotics"]
-        };
+
+    private generateOfflineInsight(context: string): StockInsight {
+        // Parsing context. Context might be JSON or plain text depending on caller.
+        // We need to detect what KIND of data this is.
+        // Sales data usually has "Transaction" or "Revenue". Inventory has "Stock" or "Quantity".
+
+        let sentiment: StockInsight['sentiment'] = 'neutral';
+        let summary = " Analyzing local data...";
+        let suggestion = "Review the detailed table below.";
+
+        try {
+            const lowerCtx = context.toLowerCase();
+
+            // --- SALES DATA ANALYSIS ---
+            if (lowerCtx.includes('transaction') || lowerCtx.includes('revenue') || lowerCtx.includes('sale')) {
+                // Mock analysis for Sales strings
+                const salesCount = (context.match(/Sale/gi) || []).length + (context.match(/Transaction/gi) || []).length;
+                if (salesCount > 5) {
+                    sentiment = 'positive';
+                    summary = `High Activity: ~${salesCount} transactions recorded recently.`;
+                    suggestion = "Ensure top-selling items are restocked immediately.";
+                } else {
+                    sentiment = 'neutral';
+                    summary = `Steady Sales Activity.`;
+                    suggestion = "Consider running a promotion to boost sales.";
+                }
+                return { sentiment, summary, actionableSuggestion: suggestion, affectedItems: [] };
+            }
+
+            // --- INVENTORY DATA ANALYSIS (Default) ---
+            // Look for [CRITICAL], [Low], [EXPIRED] markers
+            let criticalCount = 0;
+            let warningCount = 0;
+            let expiredCount = 0;
+            let totalItems = 0;
+            const criticalItems: string[] = [];
+
+            const lines = context.split('\n');
+            lines.forEach(line => {
+                if (line.includes('[CRITICAL')) {
+                    criticalCount++;
+                    const match = line.match(/- (.*?):/);
+                    if (match && match[1]) criticalItems.push(match[1]);
+                } else if (line.includes('[Low]') || line.includes('[EXPIRING SOON]')) {
+                    warningCount++;
+                } else if (line.includes('[EXPIRED]')) {
+                    expiredCount++;
+                }
+                if (line.trim().startsWith('- ')) {
+                    totalItems++;
+                }
+            });
+
+            if (criticalCount > 0) {
+                return {
+                    sentiment: "critical",
+                    summary: `⚠️ Attention: ${criticalCount} items are critically low.`,
+                    actionableSuggestion: `Reorder: ${criticalItems.slice(0, 3).join(', ')}...`,
+                    affectedItems: criticalItems
+                };
+            } else if (expiredCount > 0) {
+                return {
+                    sentiment: "critical",
+                    summary: `Waste Alert: ${expiredCount} items have expired.`,
+                    actionableSuggestion: "Remove expired stock immediately.",
+                    affectedItems: []
+                };
+            } else {
+                return {
+                    sentiment: "positive",
+                    summary: `Inventory Health is Good (${totalItems} items).`,
+                    actionableSuggestion: "Maintain current stock levels.",
+                    affectedItems: []
+                };
+            }
+
+        } catch (e) {
+            console.warn("Failed to parse offline context", e);
+            return {
+                sentiment: "neutral",
+                summary: "System Online. Data available.",
+                actionableSuggestion: "Check reports for details.",
+                affectedItems: []
+            };
+        }
     }
 }
 

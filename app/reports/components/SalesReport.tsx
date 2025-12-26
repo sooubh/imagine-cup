@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from 'react';
 import { Transaction } from '@/lib/azureDefaults';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,6 +14,7 @@ import {
   Legend,
   ArcElement
 } from 'chart.js';
+import { ReportAIInsight } from './ReportAIInsight';
 
 ChartJS.register(
   CategoryScale,
@@ -41,6 +41,23 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
         acc[t.paymentMethod] = (acc[t.paymentMethod] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
+
+    // Prepare AI Context
+    const contextData = transactions.slice(0, 20).map(t => 
+        `Transaction ${t.id}: ${t.type} of $${t.totalAmount} via ${t.paymentMethod}`
+    ).join('\n');
+
+    // Chart Data
+    const methodChartData = {
+        labels: Object.keys(salesByMethod),
+        datasets: [{
+            label: 'Transactions by Method',
+            data: Object.values(salesByMethod),
+            backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'],
+            borderRadius: 6,
+            borderWidth: 0,
+        }]
+    };
 
     // Export PDF
     const handleExportPDF = () => {
@@ -83,10 +100,12 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
         document.body.removeChild(link);
     };
 
-    if (isLoading) return <div className="p-10 text-center">Loading Data...</div>;
+    if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Sales Data...</div>;
 
     return (
         <div className="space-y-6">
+            <ReportAIInsight contextData={contextData} type="sales" />
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
                      <p className="text-neutral-500 text-sm mb-1">Total Revenue</p>
@@ -100,6 +119,18 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                      <p className="text-neutral-500 text-sm mb-1">Avg. Order Value</p>
                      <h3 className="text-3xl font-black text-neutral-dark dark:text-white">${avgOrderValue.toFixed(2)}</h3>
                  </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
+                    <h3 className="font-bold text-neutral-500 mb-4">Payment Methods</h3>
+                    <div className="h-64 flex justify-center">
+                         <Doughnut data={methodChartData} options={{ maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }} />
+                    </div>
+                </div>
+                 <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm flex items-center justify-center">
+                    <p className="text-neutral-400 text-sm">Revenue Trend Chart (Coming Soon)</p>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-[#23220f] p-8 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">

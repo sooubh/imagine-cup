@@ -34,12 +34,35 @@ export async function chatWithDataAction(userMessage: string) {
 }
 
 // Get dashboard insight
-export async function getDashboardInsightAction(context: string) {
+// Get dashboard insight (Autonomously fetches data)
+export async function getDashboardInsightAction() {
     try {
+        const cookieStore = await cookies();
+        const userId = cookieStore.get('simulated_user_id')?.value;
+        const user = userId ? getUser(userId) : null;
+        const section = user?.section || 'Hospital';
+
+        // Fetch fresh data
+        const items = await azureService.getAllItems(section);
+        // We only need items for the summary, but activities help context
+        const context = getInventoryContext(items, []);
+
         const response = await azureAIService.getDashboardInsight(context);
         return response;
     } catch (error) {
         console.error("Action Error:", error);
         return null;
+    }
+}
+
+// Get specific report insight (Takes context from client for specific tab data)
+export async function getReportInsightAction(contextData: string) {
+    try {
+        // We trust the client to pass the string representation of the data they are viewing
+        const response = await azureAIService.getDashboardInsight(contextData);
+        return response;
+    } catch (error) {
+        console.error("Report Insight Action Error:", error);
+        return null; // Logic in AI service handles fallback if parsing fails
     }
 }
