@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-page-custom-font */
 import type { Metadata } from 'next';
 import './globals.css';
-import { Navbar } from '@/components/Navbar';
+import { Shell } from '@/components/Shell';
 import { Providers } from './providers';
 import { ToastProvider } from './context/ToastContext';
 import { LedgerBot } from '@/components/LedgerBot';
@@ -27,8 +27,9 @@ export default function RootLayout({
       <body className="font-body bg-background-light dark:bg-background-dark text-neutral-dark dark:text-white transition-colors duration-300">
         <Providers>
           <ToastProvider>
-            <Navbar />
-            {children}
+            <Shell>
+              {children}
+            </Shell>
             <LedgerBot />
           </ToastProvider>
         </Providers>

@@ -27,7 +27,7 @@ export function RecentActivityFeed({ activities = [] }: RecentActivityFeedProps)
             <p className="text-sm text-neutral-800 dark:text-neutral-200">
               <span className="font-bold">{activity.user}</span> {activity.action} <span className="font-medium text-neutral-600 dark:text-neutral-400">{activity.target}</span>
             </p>
-            <span className="text-xs text-neutral-400">{new Date(activity.time).toLocaleString()}</span>
+            <span className="text-xs text-neutral-400" suppressHydrationWarning>{new Date(activity.time).toLocaleString()}</span>
           </div>
         ))}
       </div>
