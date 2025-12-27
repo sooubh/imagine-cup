@@ -6,6 +6,10 @@ import { AlertTriangle, Info, CheckCircle, X, Bell, Filter } from 'lucide-react'
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 
+// Export types for use in child components
+export type AlertFilter = 'critical' | 'warning' | 'unread';
+export type RegionFilter = 'All' | 'North' | 'South' | 'East' | 'West';
+
 export default function AlertsPage() {
     const { notifications, markAsRead, markAllAsRead, deleteNotification, clearAll } = useNotifications();
     const [filter, setFilter] = useState<'all' | 'critical' | 'alert' | 'info' | 'success'>('all');
