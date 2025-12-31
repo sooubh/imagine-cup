@@ -87,6 +87,46 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                 required: ["items"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "create_transaction",
+            description: "Record a sale or usage transaction. Use this when the user says 'Sell 5 Aspirin' or 'Record usage of X'.",
+            parameters: {
+                type: "object",
+                properties: {
+                    items: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                itemName: { type: "string" },
+                                quantity: { type: "number" }
+                            },
+                            required: ["itemName", "quantity"]
+                        },
+                        description: "List of items to sell/use"
+                    },
+                    type: { type: "string", enum: ["SALE", "INTERNAL_USAGE", "DAMAGE", "EXPIRY"], description: "Type of transaction" },
+                    customerName: { type: "string", description: "Name of customer (optional)" }
+                },
+                required: ["items", "type"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "analyze_inventory_health",
+            description: "Perform a deep analysis of inventory health, identifying critical items, expiry risks, and suggestions.",
+            parameters: {
+                type: "object",
+                properties: {
+                    focus: { type: "string", enum: ["all", "expiry", "critical"], description: "Focus area for analysis" }
+                }
+            }
+        }
     }
 ];
 
@@ -132,7 +172,7 @@ export async function chatWithLedgerBot(messages: { role: 'user' | 'bot' | 'syst
                 ] as any,
                 model: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-35-turbo",
                 temperature: 0.7,
-                max_tokens: 300,
+                max_tokens: 500,
                 tools: tools,
                 tool_choice: "auto",
             });
@@ -179,7 +219,64 @@ export async function chatWithLedgerBot(messages: { role: 'user' | 'bot' | 'syst
                     } else {
                         toolResult = `Error: Could not find item "${args.itemName}".`;
                     }
-                } else if (fnName === "navigate_to_page") {
+                } else if (fnName === "create_transaction") {
+                    // Handle Sale / Usage
+                    const transactionItems: any[] = [];
+                    let totalAmount = 0;
+                    const itemsNotFound: string[] = [];
+
+                    for (const reqItem of args.items) {
+                        const stockItem = items.find(i => i.name.toLowerCase().includes(reqItem.itemName.toLowerCase()));
+                        if (stockItem) {
+                            if (stockItem.quantity < reqItem.quantity) {
+                                toolResult += `Warning: Not enough stock for ${stockItem.name} (Has: ${stockItem.quantity}, Needed: ${reqItem.quantity}). Transaction aborted. `;
+                                itemsNotFound.push("Stock Low"); // Hacky break
+                                break;
+                            }
+                            const price = stockItem.price || 0;
+                            const subtotal = price * reqItem.quantity;
+                            transactionItems.push({
+                                itemId: stockItem.id,
+                                name: stockItem.name,
+                                quantity: reqItem.quantity,
+                                unitPrice: price,
+                                tax: 0,
+                                subtotal: subtotal
+                            });
+                            totalAmount += subtotal;
+
+                            // Decrement Stock
+                            await azureService.updateItem(stockItem.id, { quantity: stockItem.quantity - reqItem.quantity }, section);
+
+                        } else {
+                            itemsNotFound.push(reqItem.itemName);
+                        }
+                    }
+
+                    if (itemsNotFound.length > 0 && !toolResult.includes("aborted")) {
+                        toolResult = `Error: Could not find items: ${itemsNotFound.join(", ")}`;
+                    } else if (!toolResult.includes("aborted")) {
+                        await azureService.createTransaction({
+                            invoiceNumber: `INV-${Date.now()}`,
+                            date: new Date().toISOString(),
+                            type: args.type,
+                            items: transactionItems,
+                            totalAmount: totalAmount,
+                            paymentMethod: 'CASH', // Default
+                            section: section,
+                            performedBy: user?.name || 'LedgerBot',
+                            customerName: args.customerName
+                        });
+                        toolResult = `Successfully processed ${args.type} for ${transactionItems.length} items. Total: $${totalAmount}`;
+                    }
+
+                } else if (fnName === "analyze_inventory_health") {
+                    const critical = items.filter(i => i.quantity <= (i.minQuantity || 10));
+                    const expired = items.filter(i => i.expiryDate && new Date(i.expiryDate) < new Date());
+
+                    toolResult = `Analysis Results:\n- Critical Items: ${critical.length} (${critical.map(i => i.name).join(', ')})\n- Expired Items: ${expired.length}\n- Total Value: $${items.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}`;
+                }
+                else if (fnName === "navigate_to_page") {
                     return { reply: `Navigating to ${args.path}...`, redirectPath: args.path };
                 } else if (fnName === "add_to_sales_cart") {
                     // We don't execute DB function here, we tell client to do it

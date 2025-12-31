@@ -54,27 +54,36 @@ export class AzureAIService {
         }
 
         try {
+            // Enhanced prompt for "AI-First" decision making
             const prompt = `
-            You are an AI inventory analyst. Analyze the following inventory data summary and provide a SINGLE, critical insight.
-            Data: ${inventoryCtx}
+            You are an expert AI Supply Chain Manager. Your goal is to optimize inventory and prevent stockouts.
             
-            Return JSON only:
+            Analyze the following inventory snapshot and Identify the SINGLE most critical action.
+            Prioritize: 
+            1. "Critical" stock (< 10 units) -> Suggest Reorder.
+            2. "Expired" items -> Suggest Removal.
+            3. "Overstock" -> Suggest Sale/Promotion.
+            
+            Data Snapshot:
+            ${inventoryCtx.substring(0, 5000)} ... (truncated if long)
+
+            Return JSON:
             {
-                "sentiment": "critical" | "warning" | "positive",
-                "summary": "Short headline description",
-                "actionableSuggestion": "One clear action to take",
-                "affectedItems": ["List", "Of", "Items"]
+                "sentiment": "critical" | "warning" | "positive" | "neutral",
+                "summary": "Urgent: [Item] is critically low",
+                "actionableSuggestion": "Create PO for 50 units from [Vendor]",
+                "affectedItems": ["Item Name"]
             }
             `;
 
             const completion = await this.client.chat.completions.create({
                 messages: [
-                    { role: "system", content: "You are a helpful inventory assistant that outputs JSON only." },
+                    { role: "system", content: "You are a precise JSON-only inventory assistant." },
                     { role: "user", content: prompt }
                 ],
                 model: this.deploymentName,
                 response_format: { type: "json_object" },
-                temperature: 0.3,
+                temperature: 0.2, // Lower temp for more deterministic actions
             });
 
             const content = completion.choices[0].message.content;

@@ -1,12 +1,35 @@
 import { NextResponse } from 'next/server';
 import { azureService } from '@/lib/azureDefaults';
+import { z } from 'zod';
+
+// Input Validation Schema using Zod
+const searchSchema = z.object({
+    query: z.string().max(100, "Query too long").transform(val => val.toLowerCase().trim()),
+    section: z.string().max(50).optional().default('all'),
+    category: z.string().max(50).optional().default('all'),
+});
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const query = searchParams.get('q')?.toLowerCase() || '';
-        const section = searchParams.get('section') || 'all';
-        const category = searchParams.get('category') || 'all';
+
+        // Validate inputs
+        const result = searchSchema.safeParse({
+            query: searchParams.get('q') || '',
+            section: searchParams.get('section') || 'all',
+            category: searchParams.get('category') || 'all'
+        });
+
+        if (!result.success) {
+            return NextResponse.json({
+                results: [],
+                count: 0,
+                error: "Invalid Input",
+                details: result.error.flatten()
+            }, { status: 400 });
+        }
+
+        const { query, section, category } = result.data;
 
         if (!query || query.length < 2) {
             return NextResponse.json({ results: [], count: 0, query });
