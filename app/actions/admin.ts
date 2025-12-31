@@ -5,10 +5,18 @@ import { revalidatePath } from "next/cache";
 
 // --- STORE MANAGEMENT ---
 
-export async function getStoresAction(): Promise<SystemStore[]> {
+export async function getStoresAction(sectionFilter?: string): Promise<SystemStore[]> {
     try {
         const stores = await azureService.getSystemStores();
-        return stores;
+        // Filter out main organizations (Hospital, PSD, NGO) as per user request
+        const organizationNames = ["Hospital", "PSD", "NGO"];
+        let filtered = stores.filter(store => !organizationNames.includes(store.name));
+
+        if (sectionFilter) {
+            filtered = filtered.filter(store => store.section === sectionFilter);
+        }
+
+        return filtered;
     } catch (e) {
         console.error("getStoresAction failed:", e);
         return [];
@@ -45,7 +53,23 @@ export async function deleteStoreAction(storeId: string): Promise<{ success: boo
         console.error("deleteStoreAction failed:", e);
         return { success: false, error: "Server error." };
     }
+
 }
+
+export async function updateStoreAction(storeId: string, updates: Partial<SystemStore>): Promise<{ success: boolean; store?: SystemStore; error?: string }> {
+    try {
+        const updatedStore = await azureService.updateStore(storeId, updates);
+        if (updatedStore) {
+            revalidatePath('/dashboard/stores');
+            return { success: true, store: updatedStore };
+        }
+        return { success: false, error: "Failed to update store in database." };
+    } catch (e) {
+        console.error("updateStoreAction failed:", e);
+        return { success: false, error: "Server error." };
+    }
+}
+
 
 // --- STOCK MANAGEMENT ---
 

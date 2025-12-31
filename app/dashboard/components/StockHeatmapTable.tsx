@@ -130,6 +130,7 @@ export function StockHeatmapTable({ limit, items }: StockHeatmapTableProps) {
                 </th>
               ))}
               <th className="px-6 py-4 text-right">Total Stock</th>
+              <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Expiry</th>
               <th className="px-6 py-4">Last Updated</th>
               <th className="px-6 py-4 text-right">Actions</th>
@@ -186,6 +187,16 @@ export function StockHeatmapTable({ limit, items }: StockHeatmapTableProps) {
                   })}
 
                   <td className="px-6 py-4 text-right font-mono font-bold text-neutral-600 dark:text-neutral-400">{row.totalStock} <span className="text-[10px] text-neutral-400 font-normal">{row.details.unit}</span></td>
+
+                  {/* Status Column */}
+                  <td className="px-6 py-4">
+                     {(() => {
+                        const status = getStockStatus(row.totalStock, 0); // Logic from utils
+                        if (status === 'critical') return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-900/50">Critical</span>;
+                        if (status === 'low') return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50">Low Stock</span>;
+                        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-900/50">Healthy</span>;
+                     })()}
+                  </td>
 
                   {/* Expiry Column */}
                   <td className="px-6 py-4">

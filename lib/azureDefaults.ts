@@ -190,6 +190,41 @@ export class AzureInventoryService {
         try {
             const container = this.client.database(DATABASE_NAME).container(STORES_CONTAINER);
             const { resources } = await container.items.query("SELECT * FROM c").fetchAll();
+
+            // Check and Seed Default Stores & Retailers
+            const existingNames = new Set(resources.map((r: any) => r.name));
+
+            const seedData = [
+                // Infrastructure
+                { name: "Hospital", section: "Hospital" },
+                { name: "PSD", section: "PSD" },
+                { name: "NGO", section: "NGO" },
+                // PSD Retailers
+                { name: "Central Store A", section: "PSD" },
+                { name: "Central Store B", section: "PSD" },
+                { name: "Central Store C", section: "PSD" },
+                // Hospital Retailers
+                { name: "City General", section: "Hospital" },
+                { name: "Rural PHC 1", section: "Hospital" },
+                { name: "Rural PHC 2", section: "Hospital" },
+                // NGO Retailers
+                { name: "Relief Camp Alpha", section: "NGO" },
+                { name: "Relief Camp Beta", section: "NGO" },
+                { name: "Mobile Unit 1", section: "NGO" }
+            ];
+
+            const missingItems = seedData.filter(d => !existingNames.has(d.name));
+
+            if (missingItems.length > 0) {
+                console.log("Seeding missing stores:", missingItems.map(i => i.name));
+                for (const item of missingItems) {
+                    await this.addStore(item.name, item.section);
+                }
+                // Refetch to get the newly created stores with IDs
+                const { resources: updatedResources } = await container.items.query("SELECT * FROM c").fetchAll();
+                return updatedResources as SystemStore[];
+            }
+
             return resources as SystemStore[];
         } catch (e) {
             console.error("Failed to fetch stores", e);
@@ -269,6 +304,39 @@ export class AzureInventoryService {
         }
     }
 
+    async updateStore(storeId: string, updates: Partial<SystemStore>): Promise<SystemStore | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const db = this.client.database(DATABASE_NAME);
+            const storesContainer = db.container(STORES_CONTAINER);
+
+            // 1. Get Store Info
+            const { resources } = await storesContainer.items.query(`SELECT * FROM c WHERE c.id = '${storeId}'`).fetchAll();
+            if (resources.length === 0) return null;
+
+            const existingStore = resources[0];
+            const updatedStore = {
+                ...existingStore,
+                ...updates
+            };
+
+            // 2. Update via Replace
+            const { resource } = await storesContainer.item(storeId, existingStore.section).replace(updatedStore);
+
+            // 3. Update Cache if name changed (Container name usually shouldn't change easily without migration, currently ignoring container rename complexity)
+            if (updates.name) {
+                delete this.dynamicStores[existingStore.name];
+                this.dynamicStores[updatedStore.name] = updatedStore.containerName;
+            }
+
+            return resource as SystemStore;
+        } catch (e) {
+            console.error("Failed to update store:", e);
+            return null;
+        }
+    }
+
+
 
     // ... (rest of methods, getContainer needs to be updated or is already updated above)
     // IMPORTANT: getAllItems and getGlobalItems only loop over static CONTAINERS. 
@@ -300,6 +368,23 @@ export class AzureInventoryService {
             await container.items.create(activity);
         } catch (e) {
             console.error("Failed to log activity:", e);
+        }
+    }
+
+    // --- ORDER MANAGEMENT ---
+    async createOrder(order: Omit<PurchaseOrder, "id">): Promise<PurchaseOrder | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            const newOrder: PurchaseOrder = {
+                ...order,
+                id: Math.random().toString(36).substring(7)
+            };
+            const { resource } = await container.items.create(newOrder);
+            return resource as PurchaseOrder;
+        } catch (e) {
+            console.error("Failed to create purchase order:", e);
+            return null;
         }
     }
 
@@ -396,10 +481,21 @@ export class AzureInventoryService {
 
         if (this.isConnected && this.client) {
             try {
+                // Refresh cache if section is unknown to ensure we have latest containers
+                if (!CONTAINERS[section as keyof typeof CONTAINERS] && !this.dynamicStores[section]) {
+                    console.log(`Checking remote cache for section '${section}'...`);
+                    await this.refreshStoreCache();
+                }
+
                 const container = this.getContainer(section);
                 if (container) {
-                    console.log(`⚡ Querying Cosmos container: ${container.id}...`);
-                    const { resources } = await container.items.query("SELECT * from c").fetchAll();
+                    console.log(`⚡ Querying Cosmos container: ${container.id} for section: ${section}...`);
+                    // Filter by section to be precise, even if container is shared or fallback is used
+                    const { resources } = await container.items.query({
+                        query: "SELECT * from c WHERE c.section = @section",
+                        parameters: [{ name: "@section", value: section }]
+                    }).fetchAll();
+
                     console.log(`✅ getAllItems: Found ${resources.length} items in ${container.id}`);
                     return resources as StockItem[];
                 } else {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { StockItem } from "@/lib/azureDefaults";
 import { Package, Trash2, Plus, ArrowLeft, Search, Filter, AlertTriangle, X } from "lucide-react";
 import Link from 'next/link';
@@ -10,8 +10,15 @@ import { getStoreItemsAction, addStockItemAction, deleteStockItemAction } from "
 export default function StoreInventoryPage() {
     const params = useParams();
     const router = useRouter();
-    const storeId = Array.isArray(params.storeId) ? params.storeId[0] : params.storeId; // This is the Section Name
-    const sectionName = decodeURIComponent(storeId || "");
+    const searchParams = useSearchParams();
+    
+    // Store Name for Display
+    const storeId = Array.isArray(params.storeId) ? params.storeId[0] : params.storeId;
+    const storeName = decodeURIComponent(storeId || "");
+
+    // Section for Data Fetching (Use query param or fallback to store name if not present)
+    const sectionParam = searchParams.get('section');
+    const sectionName = sectionParam || storeName;
 
     const [items, setItems] = useState<StockItem[]>([]);
     const [loading, setLoading] = useState(true);
