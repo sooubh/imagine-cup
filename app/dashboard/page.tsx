@@ -41,36 +41,47 @@ export default async function DashboardPage() {
   const recentActivities = await azureService.getRecentActivities(user.section);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
-      {/* Left Column: Main Dashboard */}
-      <div className="flex-1 flex flex-col gap-8 min-w-0">
-        <div className="bg-blue-600/10 border border-blue-600/20 text-blue-400 px-6 py-4 rounded-2xl flex items-center justify-between">
-            <span className="font-bold flex items-center gap-2">
-                <span className="material-symbols-outlined">badge</span>
-                {user.name} ({user.role.toUpperCase()})
-            </span>
-            <span className="text-sm bg-blue-600/20 px-3 py-1 rounded-full">{user.section} Section</span>
+    <div className="flex flex-col xl:flex-row gap-6 h-[calc(100vh-2rem)]">
+      {/* Left Column: Main Dashboard Content */}
+      <div className="flex-1 flex flex-col gap-6 min-w-0 overflow-y-auto pr-2 scrollbar-hide">
+        {/* Simplified professional header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+             <div>
+                <h1 className="text-3xl font-display font-black text-neutral-dark dark:text-white tracking-tight">Dashboard</h1>
+                <p className="text-neutral-500 font-medium">Overview for {user.section}</p>
+             </div>
+             
+             <div className="flex items-center gap-3">
+                 <div className="bg-white dark:bg-[#1f1e0b] px-4 py-2 rounded-full border border-transparent dark:border-neutral-800 shadow-sm flex items-center gap-3">
+                     <div className="size-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-neutral-600 dark:text-neutral-300">
+                         {user.name.charAt(0)}
+                     </div>
+                     <div className="flex flex-col">
+                         <span className="text-sm font-bold text-neutral-dark dark:text-white leading-none">{user.name}</span>
+                         <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{user.role}</span>
+                     </div>
+                 </div>
+             </div>
         </div>
 
-        <Suspense fallback={<div className="h-20 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-2xl" />}>
-          <DashboardHeader />
-        </Suspense>
         <AIInsightsBanner />
-        <Suspense fallback={<div className="h-40 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-2xl" />}>
+        
+        <Suspense fallback={<div className="h-40 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-3xl" />}>
           <StatsGrid items={myItems} />
         </Suspense>
-        <Suspense fallback={<div className="h-96 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-2xl" />}>
+        
+        <Suspense fallback={<div className="h-96 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-3xl" />}>
           <StockHeatmapTable limit={20} items={myItems} />
         </Suspense>
       </div>
 
       {/* Right Column: Sidebar (Alerts & Actions) */}
-      <div className="flex flex-col gap-8 shrink-0 w-full lg:w-[320px] xl:w-[360px]">
-        <AlertsSidebar />
-        <RecentActivityFeed activities={recentActivities} />
+      <div className="w-full xl:w-[360px] shrink-0 overflow-y-auto scrollbar-hide">
+         <AlertsSidebar />
+         <div className="mt-8">
+             <RecentActivityFeed activities={recentActivities} />
+         </div>
       </div>
-
-      {/* Floating AI Chat - Removed in favor of global LedgerBot */}
     </div>
   );
 }

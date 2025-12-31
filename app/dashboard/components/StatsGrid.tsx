@@ -67,51 +67,60 @@ export function StatsGrid({ items }: StatsGridProps) {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <Link href="/reports" className="group bg-white dark:bg-[#2a2912] p-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 block">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-neutral-500 group-hover:text-primary transition-colors">Total Items Tracked</span>
-          <span className="material-symbols-outlined text-neutral-400 group-hover:text-primary transition-colors">inventory_2</span>
+      <Link href="/reports" className="group bg-white dark:bg-[#1f1e0b] p-5 rounded-3xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1 block relative">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider group-hover:text-primary transition-colors">Total Items</span>
+          <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
+             <span className="material-symbols-outlined text-[18px]">inventory_2</span>
+          </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.totalItems.toLocaleString()}</span>
-          <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">+5%</span>
-        </div>
-      </Link>
-
-      <Link href="/alerts" className="group bg-white dark:bg-[#2a2912] p-5 rounded-2xl border border-primary dark:border-primary/50 shadow-sm relative overflow-hidden hover:shadow-md transition-all hover:-translate-y-1 block">
-        <div className="absolute right-0 top-0 w-16 h-16 bg-primary/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-        <div className="flex items-center justify-between mb-2 relative z-10">
-          <span className="text-sm font-bold text-neutral-800 dark:text-neutral-200 group-hover:text-primary transition-colors">Items at Risk</span>
-          <span className="material-symbols-outlined text-orange-500">warning</span>
-        </div>
-        <div className="flex items-baseline gap-2 relative z-10">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.itemsAtRisk}</span>
-          <span className="text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">+2 items</span>
+        <div className="flex items-end justify-between">
+          <span className="text-3xl font-display font-bold text-neutral-dark dark:text-white">{stats.totalItems.toLocaleString()}</span>
+          <span className="text-[10px] font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-lg">+5%</span>
         </div>
       </Link>
 
-      <div className="bg-white dark:bg-[#2a2912] p-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-neutral-500">Avg Days Stock</span>
-          <span className="material-symbols-outlined text-neutral-400">calendar_today</span>
+      <Link href="/alerts" className="group bg-white dark:bg-[#1f1e0b] p-5 rounded-3xl shadow-sm relative overflow-hidden hover:shadow-md transition-all hover:-translate-y-1 block">
+        <div className="absolute right-0 top-0 w-24 h-24 bg-orange-500/5 rounded-bl-[4rem] -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+        <div className="flex items-center justify-between mb-3 relative z-10">
+          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider group-hover:text-orange-500 transition-colors">At Risk</span>
+           <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+             <span className="material-symbols-outlined text-[18px]">warning</span>
+          </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">{stats.avgDaysStock} <span className="text-lg font-normal text-neutral-500">Days</span></span>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${stats.stockTrendColor}`}>{stats.stockTrend}</span>
+        <div className="flex items-end justify-between relative z-10">
+          <span className="text-3xl font-display font-bold text-neutral-dark dark:text-white">{stats.itemsAtRisk}</span>
+          <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-lg">+2 New</span>
+        </div>
+      </Link>
+
+      <div className="bg-white dark:bg-[#1f1e0b] p-5 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Stock Coverage</span>
+          <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
+             <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+          </div>
+        </div>
+        <div className="flex items-end justify-between">
+          <span className="text-3xl font-display font-bold text-neutral-dark dark:text-white">{stats.avgDaysStock} <span className="text-sm font-medium text-neutral-400">Days</span></span>
+          <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${stats.stockTrendColor}`}>{stats.stockTrend}</span>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#2a2912] p-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-neutral-500 flex items-center gap-1">
-             Est. Waste Prevented
-             <span className="bg-gradient-to-r from-blue-500 to-primary text-white text-[9px] px-1.5 py-0.5 rounded font-bold">AI</span>
+      <div className="bg-white dark:bg-[#1f1e0b] p-5 rounded-3xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+         <div className="absolute right-0 bottom-0 w-20 h-20 bg-green-500/5 rounded-tl-[3rem] transition-transform hover:scale-110"></div>
+        <div className="flex items-center justify-between mb-3 relative z-10">
+          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+             Saved Waste
+             <span className="bg-blue-600 text-white text-[9px] px-1 rounded-md font-bold">AI</span>
           </span>
-          <span className="material-symbols-outlined text-neutral-400">savings</span>
+          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+             <span className="material-symbols-outlined text-[18px]">savings</span>
+          </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight text-neutral-dark dark:text-white">$45k</span>
-          <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">+12%</span>
+        <div className="flex items-end justify-between relative z-10">
+          <span className="text-3xl font-display font-bold text-neutral-dark dark:text-white">$45k</span>
+          <span className="text-[10px] font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-lg">+12%</span>
         </div>
       </div>
     </div>
