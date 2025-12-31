@@ -1,129 +1,222 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { StockItem } from '@/lib/azureDefaults';
 import { useRouter } from 'next/navigation';
-import { Search, Package, LucideIcon } from 'lucide-react';
-import stockData from '../data/sampleStockData.json';
 
 interface SearchResult {
-    type: 'stock' | 'page';
-    title: string;
-    subtitle?: string;
-    href: string;
-    icon?: LucideIcon;
+    results: StockItem[];
+    count: number;
+    total: number;
+    query: string;
 }
 
+interface GlobalSearchProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
 
-
-export function GlobalSearch() {
+export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<SearchResult[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
+    const [results, setResults] = useState<SearchResult | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedSection, setSelectedSection] = useState('all');
+    const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
-    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
+        if (isOpen && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!query || query.length < 2) {
+            setResults(null);
+            return;
+        }
+
+        setIsLoading(true);
+        const timer = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&section=${selectedSection}`);
+                const data = await response.json();
+                setResults(data);
+            } catch (error) {
+                console.error('Search failed:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [query, selectedSection]);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
             }
         };
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+            return () => document.removeEventListener('keydown', handleEscape);
+        }
+    }, [isOpen, onClose]);
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (!query.trim()) {
-                setResults([]);
-                return;
-            }
-
-            const lowerQuery = query.toLowerCase();
-
-            // Structure of sampleStockData is known
-            interface StockData {
-                item_name: string;
-                item_id: string;
-                location_id: string;
-                category: string;
-            }
-
-            const stockResults: SearchResult[] = (stockData as StockData[])
-                .filter((item) =>
-                    item.item_name.toLowerCase().includes(lowerQuery) ||
-                    item.item_id.toLowerCase().includes(lowerQuery)
-                )
-                .slice(0, 5) // Limit stock results
-                .map((item) => ({
-                    type: 'stock',
-                    title: item.item_name,
-                    subtitle: item.item_id,
-                    href: `/dashboard?stock=${item.item_id}`,
-                    icon: Package
-                }));
-
-            setResults(stockResults);
-            if (stockResults.length > 0) setIsOpen(true);
-        }, 300); // Debounce duration
-
-        return () => clearTimeout(timeoutId);
-    }, [query]);
-
-    const handleSelect = (href: string) => {
-        setIsOpen(false);
-        setQuery('');
-        router.push(href);
+    const handleItemClick = (item: StockItem) => {
+        router.push(`/item/${item.id}?section=${item.section}`);
+        onClose();
     };
 
-    return (
-        <div className="relative group hidden lg:flex" ref={containerRef}>
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-neutral-500" />
-            </div>
-            <input
-                className="block w-64 pl-10 pr-3 py-2 border-none rounded-full leading-5 bg-background-light dark:bg-[#323118] text-neutral-dark dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/50 sm:text-sm transition-all"
-                placeholder="Search stocks..."
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => query && setIsOpen(true)}
-            />
+    const groupedResults = results?.results.reduce((acc, item) => {
+        if (!acc[item.section]) {
+            acc[item.section] = [];
+        }
+        acc[item.section].push(item);
+        return acc;
+    }, {} as Record<string, StockItem[]>) || {};
 
-            {isOpen && results.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#2a2912] rounded-lg shadow-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="py-2">
-                        {results.map((result, index) => (
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[999] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+            <div 
+                className="bg-white dark:bg-[#1f1e0b] w-full max-w-3xl rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-300 mt-20"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 text-xl">search</span>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Search stocks by name, SKU, or category..."
+                            className="w-full pl-12 pr-12 py-4 bg-transparent text-lg font-medium text-neutral-dark dark:text-white placeholder-neutral-400 focus:outline-none"
+                        />
+                        {query && (
+                            <button onClick={() => setQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                <span className="material-symbols-outlined text-xl">close</span>
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div className="flex gap-2 mt-3">
+                        {['all', 'PSD', 'Hospital', 'NGO'].map((section) => (
                             <button
-                                key={`${result.type}-${index}`}
-                                onClick={() => handleSelect(result.href)}
-                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left transition-colors"
+                                key={section}
+                                onClick={() => setSelectedSection(section)}
+                                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                                    selectedSection === section
+                                        ? 'bg-primary text-black'
+                                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                                }`}
                             >
-                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500">
-                                    {result.icon && <result.icon className="h-4 w-4" />}
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                                        {result.title}
-                                    </p>
-                                    {result.subtitle && (
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                            {result.subtitle}
-                                        </p>
-                                    )}
-                                </div>
+                                {section === 'all' ? 'All Sections' : section}
                             </button>
                         ))}
                     </div>
                 </div>
-            )}
 
-            {isOpen && query && results.length === 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#2a2912] rounded-lg shadow-xl border border-neutral-100 dark:border-neutral-700 p-4 text-center z-50">
-                    <p className="text-sm text-neutral-500">No results found.</p>
+                <div className="max-h-[60vh] overflow-y-auto">
+                    {isLoading && (
+                        <div className="p-12 text-center text-neutral-500">
+                            <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
+                            <p className="mt-2">Searching...</p>
+                        </div>
+                    )}
+
+                    {!isLoading && query.length < 2 && (
+                        <div className="p-12 text-center text-neutral-500">
+                            <span className="material-symbols-outlined text-4xl mb-2 block">inventory_2</span>
+                            <p className="font-bold">Start typing to search stocks</p>
+                            <p className="text-sm mt-1">Search by name, SKU, category, or section</p>
+                        </div>
+                    )}
+
+                    {!isLoading && query.length >= 2 && results && results.count === 0 && (
+                        <div className="p-12 text-center text-neutral-500">
+                            <span className="material-symbols-outlined text-4xl mb-2 block">search_off</span>
+                            <p className="font-bold">No results found for "{query}"</p>
+                            <p className="text-sm mt-1">Try a different search term or check spelling</p>
+                        </div>
+                    )}
+
+                    {!isLoading && results && results.count > 0 && (
+                        <div className="p-2">
+                            {Object.entries(groupedResults).map(([section, items]) => (
+                                <div key={section} className="mb-4">
+                                    <div className="px-4 py-2 text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                                        {section} ({items.length})
+                                    </div>
+                                    <div className="space-y-1">
+                                        {items.map((item) => (
+                                            <button
+                                                key={`${item.id}-${item.section}`}
+                                                onClick={() => handleItemClick(item)}
+                                                className="w-full p-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors text-left group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`size-10 rounded-lg flex items-center justify-center ${
+                                                        item.category === 'Medicine' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
+                                                        item.category === 'Supplies' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' :
+                                                        'bg-purple-100 dark:bg-purple-900/30 text-purple-600'
+                                                    }`}>
+                                                        <span className="material-symbols-outlined text-[18px]">
+                                                            {item.category === 'Medicine' ? 'pill' : 'inventory_2'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-neutral-dark dark:text-white group-hover:text-primary transition-colors truncate">
+                                                            {item.name}
+                                                        </p>
+                                                        <p className="text-xs text-neutral-500 flex items-center gap-2">
+                                                            <span className="font-mono">{item.id}</span>
+                                                            <span>•</span>
+                                                            <span>{item.category}</span>
+                                                            <span>•</span>
+                                                            <span className={item.quantity <= 10 ? 'text-red-600 font-bold' : ''}>
+                                                                {item.quantity} units
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                        item.status === 'Out of Stock' ? 'bg-red-100 text-red-700' :
+                                                        item.status === 'Low Stock' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-green-100 text-green-700'
+                                                    }`}>
+                                                        {item.status}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
+
+                {results && results.total > results.count && (
+                    <div className="p-3 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-black/20 text-center text-xs text-neutral-500">
+                        Showing {results.count} of {results.total} results
+                    </div>
+                )}
+                <div className="p-3 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-black/20 flex justify-between items-center text-xs text-neutral-500">
+                    <div className="flex gap-4">
+                        <span className="flex items-center gap-1">
+                            <kbd className="px-2 py-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded">↵</kbd>
+                            to select
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <kbd className="px-2 py-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded">Esc</kbd>
+                            to close
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

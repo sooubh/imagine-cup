@@ -64,6 +64,16 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
         setModalMode('edit');
     };
 
+    const handleSaveEdit = async (updatedItem: StockItem) => {
+        // In a real implementation, this would call an API to update the item
+        // For now, we'll just refresh the page to show any updates
+        setModalMode(null);
+        setActiveItem(null);
+        
+        // Trigger a page refresh to reload data from server
+        router.refresh();
+    };
+
     return (
         <div className="w-full max-w-[1440px] mx-auto pb-12 px-4 md:px-6">
             {showFeedback && (
@@ -93,7 +103,7 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
                 <ItemDetailsModal item={activeItem} onClose={() => setModalMode(null)} />
             )}
             {activeItem && modalMode === 'edit' && (
-                <EditItemModal item={activeItem} onClose={() => setModalMode(null)} />
+                <EditItemModal item={activeItem} onClose={() => setModalMode(null)} onSave={handleSaveEdit} />
             )}
         </div>
     );

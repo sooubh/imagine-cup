@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
-export function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children, onSearchClick }: { children: React.ReactNode; onSearchClick?: () => void }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -62,7 +62,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopBar onMenuClick={handleMenuClick} />
+        <TopBar onMenuClick={handleMenuClick} onSearchClick={onSearchClick} />
         
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
           <div className="mx-auto max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-500">

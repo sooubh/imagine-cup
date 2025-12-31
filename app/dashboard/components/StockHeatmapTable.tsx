@@ -203,19 +203,40 @@ export function StockHeatmapTable({ limit, items }: StockHeatmapTableProps) {
                           <button 
                               onClick={async () => {
                                   try {
+                                      const firstItem = Array.from(row.locations.values())[0];
+                                      if (!firstItem) {
+                                          alert("No item data available");
+                                          return;
+                                      }
+                                      
+                                      if (firstItem.quantity < 1) {
+                                          alert("Insufficient stock to sell");
+                                          return;
+                                      }
+                                      
                                       const res = await fetch('/api/items/sell', {
                                           method: 'POST',
                                           headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ itemId: row.details.id, section: Array.from(row.locations.values())[0].section })
+                                          body: JSON.stringify({ 
+                                              items: [{
+                                                  itemId: row.details.id,
+                                                  quantity: 1,
+                                                  price: firstItem.price || 0
+                                              }],
+                                              section: firstItem.section
+                                          })
                                       });
+                                      
                                       if (res.ok) {
+                                          alert("Item sold successfully!");
                                           window.location.reload();
                                       } else {
-                                          alert("Failed to sell item");
+                                          const error = await res.json();
+                                          alert(`Failed to sell item: ${error.error || 'Unknown error'}`);
                                       }
                                   } catch (e) {
                                       console.error(e);
-                                      alert("Error selling item");
+                                      alert("Error selling item. Please try again.");
                                   }
                               }}
                               className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-green-600" 

@@ -1,15 +1,14 @@
 /* eslint-disable @next/next/no-page-custom-font */
+'use client';
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Shell } from '@/components/Shell';
 import { Providers } from './providers';
 import { ToastProvider } from './context/ToastContext';
 import { LedgerBot } from '@/components/LedgerBot';
-
-export const metadata: Metadata = {
-  title: 'LedgerShield',
-  description: 'Smart Inventory & Finance Management',
-};
+import { GlobalSearch } from '@/components/GlobalSearch';
+import { useState, useEffect } from 'react';
 
 export default function RootLayout({
   children,
@@ -27,13 +26,36 @@ export default function RootLayout({
       <body className="font-body bg-background-light dark:bg-background-dark text-neutral-dark dark:text-white transition-colors duration-300">
         <Providers>
           <ToastProvider>
-            <Shell>
-              {children}
-            </Shell>
-            <LedgerBot />
+            <LayoutContent>{children}</LayoutContent>
           </ToastProvider>
         </Providers>
       </body>
     </html>
+  );
+}
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <>
+      <Shell onSearchClick={() => setIsSearchOpen(true)}>
+        {children}
+      </Shell>
+      <LedgerBot />
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    </>
   );
 }

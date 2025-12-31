@@ -1,6 +1,7 @@
 'use client';
 
 import { Activity } from "@/lib/azureDefaults";
+import Link from "next/link";
 
 interface RecentActivityFeedProps {
   activities: Activity[];
@@ -11,7 +12,7 @@ export function RecentActivityFeed({ activities = [] }: RecentActivityFeedProps)
     <div className="bg-white dark:bg-[#2a2912] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm p-5 h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-lg text-neutral-dark dark:text-white">Recent Activity</h3>
-        <button className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">View All</button>
+        <Link href="/dashboard/activity" className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">View All</Link>
       </div>
       
       <div className="relative border-l-2 border-neutral-100 dark:border-neutral-800 ml-2 space-y-6 pl-4">

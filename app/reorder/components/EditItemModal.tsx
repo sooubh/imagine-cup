@@ -16,11 +16,23 @@ export function EditItemModal({ item, onClose, onSave }: EditItemModalProps) {
         notes: ''
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, we'd send data to API
-        console.log('Saving changes for:', item.name, formData);
-        onSave?.({ ...item }); // In mock, just returning same item
+        
+        // Save the changes (in a real app, this would call an API)
+        const updatedItem = {
+            ...item,
+            minQuantity: formData.suggestedQty,
+            // Store notes in description field
+            description: formData.notes || item.description
+        };
+        
+        // Call parent's onSave handler to update the item
+        if (onSave) {
+            onSave(updatedItem);
+        }
+        
+        // Close modal
         onClose();
     };
 

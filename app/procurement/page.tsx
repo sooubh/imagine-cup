@@ -15,6 +15,7 @@ function ProcurementContent() {
     const [draftItems, setDraftItems] = useState<any[]>([]); // Items to be ordered
     const [orders, setOrders] = useState<PurchaseOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
 
     // Load Draft Items from URL
     useEffect(() => {
@@ -256,7 +257,11 @@ function ProcurementContent() {
             {activeTab === 'history' && (
                 <div className="space-y-4">
                     {orders.map(order => (
-                        <div key={order.id} className="bg-white dark:bg-[#1f1e0b] rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6 shadow-sm hover:shadow-md transition-shadow">
+                        <div 
+                            key={order.id} 
+                            className="bg-white dark:bg-[#1f1e0b] rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => setSelectedOrder(order)}
+                        >
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <div className="flex items-center gap-3 mb-1">
@@ -315,8 +320,8 @@ function ProcurementContent() {
                                         </li>
                                     ))}
                                     {order.items.length > 3 && (
-                                        <li className="text-xs text-neutral-400 italic pt-1">
-                                            + {order.items.length - 3} more items...
+                                        <li className="text-xs text-primary font-bold pt-1 hover:underline">
+                                            Click to view all {order.items.length} items →
                                         </li>
                                     )}
                                 </ul>
@@ -326,6 +331,92 @@ function ProcurementContent() {
                     {orders.length === 0 && !isLoading && (
                         <div className="text-center py-12 text-neutral-400">No past orders found.</div>
                     )}
+                </div>
+            )}
+
+            {/* Order Details Modal */}
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedOrder(null)}>
+                    <div 
+                        className="bg-white dark:bg-[#1f1e0b] w-full max-w-3xl rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="p-6 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-neutral-dark dark:text-white mb-1">{selectedOrder.poNumber}</h2>
+                                    <p className="text-sm text-neutral-500">Created {new Date(selectedOrder.dateCreated).toLocaleDateString()} by {selectedOrder.createdBy}</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedOrder(null)}
+                                    className="size-10 flex items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                        selectedOrder.status === 'RECEIVED' ? 'bg-green-100 text-green-700 border-green-200' : 
+                                        selectedOrder.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                        selectedOrder.status === 'CANCELLED' ? 'bg-red-100 text-red-700 border-red-200' :
+                                        'bg-gray-100 text-gray-700 border-gray-200'
+                                    }`}>
+                                        {selectedOrder.status}
+                                    </span>
+                                    <span className="text-lg font-bold text-neutral-dark dark:text-white">
+                                        Total: ${selectedOrder.totalEstimatedCost?.toLocaleString() || 0}
+                                    </span>
+                                </div>
+
+                                <table className="w-full">
+                                    <thead className="text-xs uppercase text-neutral-400 border-b border-neutral-100 dark:border-neutral-800">
+                                        <tr>
+                                            <th className="pb-3 text-left">Item</th>
+                                            <th className="pb-3 text-left">SKU</th>
+                                            <th className="pb-3 text-right">Qty</th>
+                                            <th className="pb-3 text-left">Section</th>
+                                            <th className="pb-3 text-right">Est. Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                        {selectedOrder.items.map((item, i) => (
+                                            <tr key={i} className="group hover:bg-neutral-50 dark:hover:bg-neutral-900/30">
+                                                <td className="py-4 font-medium text-neutral-dark dark:text-white">{item.name}</td>
+                                                <td className="py-4 text-sm text-neutral-500 font-mono">{item.itemId}</td>
+                                                <td className="py-4 text-right font-mono font-bold">{item.requestedQuantity}</td>
+                                                <td className="py-4 text-sm">{item.section}</td>
+                                                <td className="py-4 text-right font-mono">${((item.price || 0) * item.requestedQuantity).toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 flex justify-end gap-2">
+                            <button 
+                                onClick={() => handleExportPDF(selectedOrder)}
+                                className="px-4 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-300 transition-colors flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                                Export PDF
+                            </button>
+                            <button 
+                                onClick={() => handleExportCSV(selectedOrder)}
+                                className="px-4 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-300 transition-colors flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">csv</span>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
