@@ -388,6 +388,48 @@ export class AzureInventoryService {
         }
     }
 
+    async getOrders(): Promise<PurchaseOrder[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            const { resources } = await container.items
+                .query("SELECT * FROM c ORDER BY c.dateCreated DESC")
+                .fetchAll();
+            return resources as PurchaseOrder[];
+        } catch (e) {
+            console.error("Failed to fetch purchase orders:", e);
+            return [];
+        }
+    }
+
+    async updateOrder(id: string, updates: Partial<PurchaseOrder>, currentStatus: string): Promise<PurchaseOrder | null> {
+        if (!this.isConnected || !this.client) return null;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+
+            // Query to find the order
+            const { resources } = await container.items.query({
+                query: "SELECT * FROM c WHERE c.id = @id",
+                parameters: [{ name: "@id", value: id }]
+            }).fetchAll();
+
+            if (resources.length === 0) return null;
+
+            const existingOrder = resources[0];
+            const updatedOrder = {
+                ...existingOrder,
+                ...updates
+            };
+
+            // Replace using status as partition key
+            const { resource } = await container.item(id, currentStatus).replace(updatedOrder);
+            return resource as PurchaseOrder;
+        } catch (e) {
+            console.error("Failed to update purchase order:", e);
+            return null;
+        }
+    }
+
     // --- TRANSACTION LOGGING ---
     async createTransaction(transaction: Omit<Transaction, "id">): Promise<Transaction | null> {
         if (!this.isConnected || !this.client) return null;
