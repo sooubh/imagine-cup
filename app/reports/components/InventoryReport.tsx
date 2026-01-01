@@ -1,11 +1,11 @@
 "use client";
 
 import { StockItem } from '@/lib/azureDefaults';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ReportAIInsight } from './ReportAIInsight';
+import { ExportButton } from '@/components/ExportButton';
+import { formatInventoryForExport } from '@/lib/exportUtils';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -46,30 +46,7 @@ export function InventoryReport({ items, isLoading }: InventoryReportProps) {
         ],
     };
 
-    const handleExportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Inventory Valuation Report", 14, 22);
-        doc.text(`Total Value: $${totalValue.toFixed(2)}`, 14, 30);
-        
-        const tableBody = items.map(i => [
-            i.name, i.category, i.quantity.toString(), `$${i.price}`, `$${(i.quantity * i.price).toFixed(2)}`, i.section
-        ]);
-        autoTable(doc, { head: [['Item', 'Category', 'Qty', 'Unit Price', 'Total Value', 'Section']], body: tableBody, startY: 40 });
-        doc.save('inventory_report.pdf');
-    };
 
-     const handleExportCSV = () => {
-        const headers = ['Item', 'Category', 'Qty', 'Unit Price', 'Total Value', 'Section'];
-        const rows = items.map(i => `${i.name},${i.category},${i.quantity},${i.price},${(i.quantity * i.price).toFixed(2)},${i.section}`);
-        const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "inventory_report.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
 
     if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Inventory Analysis...</div>;
 
@@ -93,13 +70,14 @@ export function InventoryReport({ items, isLoading }: InventoryReportProps) {
             </div>
 
             <div className="bg-white dark:bg-[#23220f] p-8 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-bold">Inventory Valuation</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleExportPDF} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500"><span className="material-symbols-outlined">picture_as_pdf</span></button>
-                        <button onClick={handleExportCSV} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500"><span className="material-symbols-outlined">csv</span></button>
-                    </div>
-                </div>
+                    <ExportButton 
+                        data={formatInventoryForExport(items)}
+                        filename="inventory_report"
+                        reportTitle="Inventory Valuation Report"
+                    />
+                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div>

@@ -1,8 +1,8 @@
 'use client';
 
 import { StockItem } from '@/lib/azureDefaults';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { ExportButton } from '@/components/ExportButton';
+import { formatInventoryForExport } from '@/lib/exportUtils';
 
 interface CriticalReportsProps {
     items?: StockItem[];
@@ -20,30 +20,7 @@ export function CriticalReports({ items = [], isLoading = false }: CriticalRepor
     const wasteRiskItems = items.filter(i => i.quantity > 500); 
     const wasteRiskCount = wasteRiskItems.length;
 
-    const generateStockOutReport = () => {
-        const doc = new jsPDF();
-        doc.text("Critical Stock-out Risk Report", 14, 22);
-        const rows = lowStockItems.map(i => [i.name, i.category, i.quantity.toString(), (i.minQuantity||20).toString(), i.section]);
-        autoTable(doc, {
-            head: [['Item', 'Category', 'Current Qty', 'Threshold', 'Section']],
-            body: rows,
-            startY: 30
-        });
-        doc.save('stock_out_risk_report.pdf');
-    };
 
-    const generateWasteReport = () => {
-        const doc = new jsPDF();
-        doc.text("Waste Reduction Analysis", 14, 22);
-        doc.text("Items with excessive stock levels (> 500 units)", 14, 28);
-        const rows = wasteRiskItems.map(i => [i.name, i.category, i.quantity.toString(), i.price.toString(), i.section]);
-        autoTable(doc, {
-            head: [['Item', 'Category', 'Qty', 'Unit Price', 'Section']],
-            body: rows,
-            startY: 35
-        });
-        doc.save('waste_reduction_report.pdf');
-    };
 
   return (
     <section>
@@ -66,9 +43,11 @@ export function CriticalReports({ items = [], isLoading = false }: CriticalRepor
               <p className="text-neutral-500 text-sm leading-relaxed">Items below reorder threshold requires immediate action. <br/><span className="font-semibold text-neutral-dark dark:text-white">Urgency: High</span></p>
             </div>
             <div className="flex gap-3 mt-2">
-              <button onClick={generateStockOutReport} className="flex-1 h-9 rounded-full bg-primary text-black text-xs font-bold flex items-center justify-center gap-2 hover:brightness-95 transition-colors">
-                <span className="material-symbols-outlined text-[16px]">download</span> Download PDF
-              </button>
+              <ExportButton 
+                data={formatInventoryForExport(lowStockItems)}
+                filename="critical_low_stock_report"
+                reportTitle="Critical Low Stock Items"
+              />
             </div>
           </div>
           <div className="w-full sm:w-40 aspect-video sm:aspect-square bg-cover bg-center rounded-2xl" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCZt14DoI4725sG9ch5xEHngnnVz3Hfa4W-TXvccJFD1LLOCm8lB-Z4wkQXN41uZustRtXNdBjUhloeK0HhifUBpD42Z-G5pnKZkMSM7xmMretWvHT5pYRH82uyUt-GVMeistgFiQVvwWFcp98bJYNQdr0hCduMI1QhPguU_TnCpR7p4lD83lnS8tydqfq5EolIg1o6qhi32lnh0MApkE9UKw8uufBVTqyyOtaBJFx6qyWvXSfAuUQmdswgWgXS1Kz62yoKyG30I-g')"}}></div>
@@ -85,9 +64,11 @@ export function CriticalReports({ items = [], isLoading = false }: CriticalRepor
               <p className="text-neutral-500 text-sm leading-relaxed">Items with excessive stock levels (&gt;500 units). Consider sales or redistribution.</p>
             </div>
             <div className="flex gap-3 mt-2">
-              <button onClick={generateWasteReport} className="flex-1 h-9 rounded-full bg-primary text-black text-xs font-bold flex items-center justify-center gap-2 hover:brightness-95 transition-colors">
-                <span className="material-symbols-outlined text-[16px]">download</span> Download PDF
-              </button>
+              <ExportButton 
+                data={formatInventoryForExport(wasteRiskItems)}
+                filename="overstocked_items_report"
+                reportTitle="Overstocked Items Analysis"
+              />
             </div>
           </div>
           <div className="w-full sm:w-40 aspect-video sm:aspect-square bg-cover bg-center rounded-2xl" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBA1EysNfUbZIvZTJEULR6fcrtQoavuY96gEnYR9NrTO0Fvgeijxh538--YuMshBXKHiFlVqlWEbNcgcbNc15wEIsC4kGFwzbS8Luo1Z9-LuRgo83blm3TC0-nBtnAEcoaJnh3kc1R-5jZSeiS2QWlMtg-SOdoNASDuf-4CNJwxILkL97WEyNSHBTgYQwAF3pG39DngJ5BX5tfaulWuxrldw0kYSC4qEt9rhqURv0g9Gy3nybtWUnxARxv1MAsG9ERmkknnKeto1LY')"}}></div>

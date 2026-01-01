@@ -24,38 +24,40 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'alert',
-    title: 'Low Stock Alert',
-    message: 'Paracetamol 500mg is below reorder level.',
-    time: '2 mins ago',
-    read: false,
-    timestamp: Date.now() - 120000,
-  },
-  {
-    id: '2',
-    type: 'info',
-    title: 'System Update',
-    message: 'Dashboard maintenance scheduled for tonight.',
-    time: '1 hour ago',
-    read: false,
-    timestamp: Date.now() - 3600000,
-  },
-  {
-    id: '3',
-    type: 'success',
-    title: 'Order Delivered',
-    message: 'Order #12345 has been delivered successfully.',
-    time: '2 hours ago',
-    read: true,
-    timestamp: Date.now() - 7200000,
-  },
-];
+// Load notifications from localStorage on mount
+const loadNotificationsFromStorage = (): Notification[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem('notifications');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveNotificationsToStorage = (notifications: Notification[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  } catch (e) {
+    console.error('Failed to save notifications', e);
+  }
+};
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setNotifications(loadNotificationsFromStorage());
+  }, []);
+
+  // Save to localStorage whenever notifications change
+  useEffect(() => {
+    if (notifications.length > 0) {
+      saveNotificationsToStorage(notifications);
+    }
+  }, [notifications]);
 
   // Helper to format "time ago"
   const getTimeAgo = (timestamp: number) => {
@@ -76,43 +78,44 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate Live Updates
+  // Listen for custom events to add notifications
   useEffect(() => {
-    const interval = setInterval(() => {
-      // 30% chance to add a notification every 20 seconds
-      if (Math.random() > 0.7) {
-        const types: ('alert' | 'info' | 'success')[] = ['alert', 'success', 'info'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        
-        let title = '';
-        let message = '';
+    const handleSaleComplete = (e: CustomEvent) => {
+      const { invoiceNumber, totalAmount } = e.detail;
+      addNotification({
+        type: 'success',
+        title: 'Sale Completed',
+        message: `Invoice ${invoiceNumber} - $${totalAmount.toFixed(2)}`
+      });
+    };
 
-        if (type === 'alert') {
-            title = 'Critical Stock Alert';
-            message = `Stock for Item #${Math.floor(Math.random() * 1000)} is critically low.`;
-        } else if (type === 'success') {
-            title = 'New Order Received';
-            message = `Order #${Math.floor(Math.random() * 10000)} has been placed by a retailer.`;
-        } else {
-            title = 'System Info';
-            message = 'Data synchronization completed successfully.';
-        }
+    const handleLowStock = (e: CustomEvent) => {
+      const { itemName, quantity, location } = e.detail;
+      addNotification({
+        type: 'alert',
+        title: 'Low Stock Alert',
+        message: `${itemName} is down to ${quantity} units at ${location}`
+      });
+    };
 
-        const newNotification: Notification = {
-            id: Date.now().toString(),
-            type,
-            title,
-            message,
-            read: false,
-            timestamp: Date.now(),
-            time: 'Just now'
-        };
+    const handleCriticalStock = (e: CustomEvent) => {
+      const { itemName, location } = e.detail;
+      addNotification({
+        type: 'alert',
+        title: 'Critical: Stock Depleted',
+        message: `${itemName} is out of stock at ${location}`
+      });
+    };
 
-        setNotifications(prev => [newNotification, ...prev]);
-      }
-    }, 20000); // Check every 20 seconds
+    window.addEventListener('sale-completed' as any, handleSaleComplete);
+    window.addEventListener('low-stock-alert' as any, handleLowStock);
+    window.addEventListener('critical-stock-alert' as any, handleCriticalStock);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('sale-completed' as any, handleSaleComplete);
+      window.removeEventListener('low-stock-alert' as any, handleLowStock);
+      window.removeEventListener('critical-stock-alert' as any, handleCriticalStock);
+    };
   }, []);
 
   const markAsRead = (id: string) => {

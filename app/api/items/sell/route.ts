@@ -67,6 +67,15 @@ export async function POST(request: Request) {
                     quantity: newQuantity,
                     status: newStatus
                 }, section);
+
+                // Log activity for each item sold
+                await azureService.logActivity(
+                    operatorId,
+                    `sold ${processedItem.quantity} units`,
+                    processedItem.name,
+                    'update',
+                    section
+                );
             }
         }
 
@@ -93,10 +102,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Transaction recording failed, but stock updated.' }, { status: 500 });
         }
 
-        // 4. Log Activity
+        // 4. Log Main Activity
         await azureService.logActivity(operatorId, `processed ${transactionType}`, `Invoice #${createdTransaction.invoiceNumber}`, 'create', section);
 
-        return NextResponse.json(createdTransaction);
+        // 5. Return transaction data along with updated items for client-side updates
+        return NextResponse.json({
+            ...createdTransaction,
+            updatedItems: processedItems.map(pi => pi.itemId)
+        });
 
     } catch (error) {
         console.error("Sell error:", error);

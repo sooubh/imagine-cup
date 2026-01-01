@@ -1,9 +1,9 @@
 "use client";
 
 import { Activity } from '@/lib/azureDefaults';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { ReportAIInsight } from './ReportAIInsight';
+import { ExportButton } from '@/components/ExportButton';
+import { formatActivitiesForExport } from '@/lib/exportUtils';
 
 interface TeamReportProps {
     activities: Activity[];
@@ -34,24 +34,7 @@ export function TeamReport({ activities, isLoading }: TeamReportProps) {
         `User ${m.name}: ${m.actionsCount} actions, last seen ${new Date(m.lastActive).toLocaleDateString()}. Top action: ${m.mostCommonAction}`
     ).join('\n');
 
-    const handleExportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Team Activity Report", 14, 22);
-        
-        const tableBody = teamMembers.map(m => [
-            m.name,
-            new Date(m.lastActive).toLocaleString(),
-            m.actionsCount.toString(),
-            m.mostCommonAction
-        ]);
 
-        autoTable(doc, {
-            head: [['User', 'Last Active', 'Actions Logged', 'Top Action']],
-            body: tableBody,
-            startY: 30,
-        });
-        doc.save('team_report.pdf');
-    };
 
     if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Team Data...</div>;
 
@@ -64,9 +47,11 @@ export function TeamReport({ activities, isLoading }: TeamReportProps) {
                      <h2 className="text-2xl font-black text-neutral-dark dark:text-white mb-1">Active Team Members</h2>
                      <p className="text-neutral-500">Based on recent system activity logs</p>
                 </div>
-                <button onClick={handleExportPDF} className="px-6 py-3 bg-primary text-black font-bold rounded-full shadow-lg hover:shadow-xl transition-all">
-                    Download Report
-                </button>
+                <ExportButton 
+                    data={formatActivitiesForExport(activities)}
+                    filename="team_activity_report"
+                    reportTitle="Team Activity Log"
+                />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -1,9 +1,9 @@
 "use client";
 
 import { PurchaseOrder } from '@/lib/azureDefaults';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { ReportAIInsight } from './ReportAIInsight';
+import { ExportButton } from '@/components/ExportButton';
+import { formatOrdersForExport } from '@/lib/exportUtils';
 
 interface ProcurementReportProps {
     orders: PurchaseOrder[];
@@ -24,52 +24,7 @@ export function ProcurementReport({ orders, isLoading }: ProcurementReportProps)
         `PO #${o.poNumber}: Status ${o.status}, Vendor ${o.vendor || 'Unknown'}, Total $${(o.totalEstimatedCost || 0).toFixed(2)}`
     ).join('\n');
 
-    const handleExportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Procurement Report", 14, 22);
-        doc.text(`Total Spend (Est): $${totalSpend.toFixed(2)}`, 14, 30);
-        
-        const tableBody: any[] = [];
-        orders.forEach(o => {
-            o.items.forEach(item => {
-                tableBody.push([
-                    new Date(o.dateCreated).toLocaleDateString(),
-                    o.poNumber,
-                     o.status,
-                    item.name,
-                    item.requestedQuantity,
-                    `$${(item.price || 0).toFixed(2)}`,
-                    o.vendor || 'N/A'
-                ]);
-            });
-        });
 
-        autoTable(doc, {
-            head: [['Date', 'PO #', 'Status', 'Item', 'Qty', 'Unit Price', 'Vendor']],
-            body: tableBody,
-            startY: 40,
-        });
-        doc.save('procurement_report.pdf');
-    };
-
-    const handleExportCSV = () => {
-        const headers = ['Date', 'PO Number', 'Status', 'Item', 'Quantity', 'Unit Price', 'Vendor', 'Total Cost'];
-        const rows: string[] = [];
-        orders.forEach(o => {
-             o.items.forEach(item => {
-                 rows.push(`${o.dateCreated},${o.poNumber},${o.status},${item.name},${item.requestedQuantity},${item.price || 0},${o.vendor || ''},${((item.price||0)*item.requestedQuantity).toFixed(2)}`);
-             });
-        });
-        
-        const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "procurement_report.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
 
     if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Procurement Data...</div>;
 
@@ -97,17 +52,14 @@ export function ProcurementReport({ orders, isLoading }: ProcurementReportProps)
             </div>
 
             <div className="bg-white dark:bg-[#23220f] p-8 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-bold">Procurement History</h2>
-                     <div className="flex gap-2">
-                        <button onClick={handleExportPDF} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500" title="PDF">
-                             <span className="material-symbols-outlined">picture_as_pdf</span>
-                        </button>
-                        <button onClick={handleExportCSV} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500" title="CSV">
-                             <span className="material-symbols-outlined">csv</span>
-                        </button>
-                    </div>
-                </div>
+                    <ExportButton 
+                        data={formatOrdersForExport(orders)}
+                        filename="procurement_report"
+                        reportTitle="Procurement Orders Report"
+                    />
+                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">

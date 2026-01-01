@@ -1,8 +1,6 @@
 "use client";
 
 import { Transaction } from '@/lib/azureDefaults';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,6 +13,8 @@ import {
   ArcElement
 } from 'chart.js';
 import { ReportAIInsight } from './ReportAIInsight';
+import { ExportButton } from '@/components/ExportButton';
+import { formatSalesForExport } from '@/lib/exportUtils';
 
 ChartJS.register(
   CategoryScale,
@@ -59,46 +59,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
         }]
     };
 
-    // Export PDF
-    const handleExportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Sales Report", 14, 22);
-        
-        doc.setFontSize(10);
-        doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 14, 30);
-        doc.text(`Total Orders: ${totalOrders}`, 14, 35);
-        
-        const tableBody = transactions.map(t => [
-            new Date(t.date).toLocaleDateString(),
-            t.id,
-            t.type,
-            t.paymentMethod,
-            `$${t.totalAmount.toFixed(2)}`
-        ]);
 
-        autoTable(doc, {
-            head: [['Date', 'Transaction ID', 'Type', 'Payment', 'Amount']],
-            body: tableBody,
-            startY: 45,
-        });
-        
-        doc.save('sales_report.pdf');
-    };
-
-    const handleExportCSV = () => {
-        const headers = ['Date', 'ID', 'Type', 'Payment', 'Amount'];
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + headers.join(",") + "\n"
-            + transactions.map(t => `${t.date},${t.id},${t.type},${t.paymentMethod},${t.totalAmount}`).join("\n");
-            
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "sales_report.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
 
     if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Sales Data...</div>;
 
@@ -134,17 +95,14 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
             </div>
 
             <div className="bg-white dark:bg-[#23220f] p-8 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-bold">Transaction History</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleExportPDF} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500" title="PDF">
-                             <span className="material-symbols-outlined">picture_as_pdf</span>
-                        </button>
-                        <button onClick={handleExportCSV} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500" title="CSV">
-                             <span className="material-symbols-outlined">csv</span>
-                        </button>
-                    </div>
-                </div>
+                    <ExportButton 
+                        data={formatSalesForExport(transactions)}
+                        filename="sales_report"
+                        reportTitle="Sales Transaction Report"
+                    />
+                 </div>
                 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">

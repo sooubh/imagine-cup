@@ -23,11 +23,15 @@ export default async function DashboardPage() {
   const user = getUser(userId);
   if (!user) redirect('/');
 
-  // Fetch Data - All users see ALL items in their section
+  // Fetch Data - Get all items in the section
   const allItems = await azureService.getAllItems(user.section);
   
-  // Share all data across admin and retailers in the same section
-  const myItems = allItems.filter(i => i.section === user.section);
+  // Filter based on user role:
+  // - Admins see all inventory within their section
+  // - Retailers see only their own inventory (where ownerId matches their user ID)
+  const myItems = user.role === 'admin' 
+    ? allItems.filter(i => i.section === user.section)
+    : allItems.filter(i => i.ownerId === user.id);
 
   const recentActivities = await azureService.getRecentActivities(user.section);
 

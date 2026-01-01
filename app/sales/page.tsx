@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Filter, Tag, X } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Filter, Tag, X, Loader2 } from 'lucide-react';
 import { StockItem, Transaction } from '@/lib/azureDefaults';
 import InvoiceModal from '@/components/InvoiceModal';
+import { useToast } from '@/app/context/ToastContext';
+import { getUser, UserProfile } from '@/lib/auth';
 
 interface CartItem {
     item: StockItem;
@@ -11,10 +13,13 @@ interface CartItem {
 }
 
 export default function SalesPage() {
+    const toast = useToast();
+    const [user, setUser] = useState<UserProfile | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [inventory, setInventory] = useState<StockItem[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [transactionType, setTransactionType] = useState('SALE');
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [latestTransaction, setLatestTransaction] = useState<Transaction | null>(null);
@@ -55,23 +60,52 @@ export default function SalesPage() {
         };
     }, [resize, stopResizing]);
 
-    // Simulate fetching inventory (replace with actual API call)
+    // Get user on mount
     useEffect(() => {
-        // In a real scenario, you'd fetch this from /api/items?section=...
-        // For now, let's just initialize an empty state or fetch from API if possible.
-        fetchInventory();
+        // Parse cookies using native browser API
+        const getCookie = (name: string) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop()?.split(';').shift();
+            return null;
+        };
+        
+        const userId = getCookie('simulated_user_id');
+        if (userId) {
+            const userProfile = getUser(userId);
+            if (userProfile) {
+                setUser(userProfile);
+            }
+        }
     }, []);
 
+    // Fetch inventory when user is loaded
+    useEffect(() => {
+        if (user) {
+            fetchInventory();
+        }
+    }, [user]);
+
     const fetchInventory = async () => {
+        if (!user) return;
+        
         setIsLoading(true);
         try {
-            const res = await fetch('/api/items'); 
+            // Fetch items from user's section only
+            const res = await fetch(`/api/items?section=${user.section}`);
             const data = await res.json();
+            
             if (Array.isArray(data)) {
-                setInventory(data);
+                // Filter by ownerId for retailers, show all for admins
+                const filteredData = user.role === 'admin'
+                    ? data
+                    : data.filter(item => item.ownerId === user.id);
+                
+                setInventory(filteredData);
             }
         } catch (error) {
             console.error("Failed to fetch inventory", error);
+            toast.error('Error', 'Failed to load inventory');
         } finally {
             setIsLoading(false);
         }
@@ -133,7 +167,8 @@ export default function SalesPage() {
             }
             return [...prev, { item, quantity: 1 }];
         });
-        // Optional: Simple visual feedback or vibration if on mobile
+        // Visual feedback
+        toast.success('Added to cart', item.name);
         if (navigator.vibrate) navigator.vibrate(50);
     };
 
@@ -162,6 +197,9 @@ export default function SalesPage() {
     const handleCheckout = async () => {
         if (cart.length === 0) return;
 
+        setIsProcessing(true);
+        toast.info('Processing transaction...', 'Please wait');
+
         // Construct payload
         const payload = {
             items: cart.map(c => ({
@@ -169,10 +207,10 @@ export default function SalesPage() {
                 price: c.item.price,
                 quantity: c.quantity
             })),
-            section: cart[0].item.section, // Assuming single section for now or handle mixed
+            section: cart[0].item.section,
             transactionType,
             paymentMethod,
-            customerName: "Walk-in", // Placeholder
+            customerName: "Walk-in",
             operatorId: "System"
         };
         
@@ -185,17 +223,31 @@ export default function SalesPage() {
             const data = await res.json();
             
             if (res.ok) {
-                // alert(`Transaction Successful! Invoice: ${data.invoiceNumber}`);
+                // Success!
+                toast.success('Transaction Successful!', `Invoice: ${data.invoiceNumber}`);
+                
+                // Dispatch event for notifications
+                window.dispatchEvent(new CustomEvent('sale-completed', {
+                    detail: {
+                        invoiceNumber: data.invoiceNumber,
+                        totalAmount: data.totalAmount
+                    }
+                }));
+                
                 setLatestTransaction(data);
                 setShowInvoice(true);
                 setCart([]);
-                fetchInventory(); // Refresh stock
+                
+                // Refresh inventory
+                await fetchInventory();
             } else {
-                alert(`Transaction Failed: ${data.error}`);
+                toast.error('Transaction Failed', data.error || 'Unknown error');
             }
         } catch (e) {
             console.error(e);
-            alert("Error processing transaction");
+            toast.error('Error', 'Failed to process transaction');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -504,15 +556,24 @@ export default function SalesPage() {
 
                     <button 
                         onClick={handleCheckout}
-                        disabled={cart.length === 0}
+                        disabled={cart.length === 0 || isProcessing}
                         className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] ${
-                            cart.length > 0 
+                            cart.length > 0 && !isProcessing
                             ? 'bg-primary hover:bg-[#eae605] text-black shadow-lg hover:shadow-xl hover:shadow-primary/20' 
                             : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
                         }`}
                     >
-                        <CreditCard className="w-4 h-4" />
-                        {cart.length > 0 ? "Generate Invoice" : "Add Items"}
+                        {isProcessing ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Processing...
+                            </>
+                        ) : (
+                            <>
+                                <CreditCard className="w-4 h-4" />
+                                {cart.length > 0 ? "Generate Invoice" : "Add Items"}
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
