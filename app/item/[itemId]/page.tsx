@@ -1,34 +1,50 @@
-import { Navbar } from '@/components/Navbar';
 import { ItemProfileCard } from '@/app/item/components/ItemProfileCard';
 import { StockChartVisual } from '@/app/item/components/StockChartVisual';
 import { RiskAssessmentCard } from '@/app/item/components/RiskAssessmentCard';
+import { azureService } from '@/lib/azureDefaults';
+import { notFound } from 'next/navigation';
+import { ItemHeaderActions } from '../components/ItemHeaderActions';
 
-export default function ItemPage() {
+type Props = {
+    params: Promise<{ itemId: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function ItemPage({ params, searchParams }: Props) {
+  const { itemId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const section = typeof resolvedSearchParams.section === 'string' ? resolvedSearchParams.section : undefined;
+
+  if (!section) {
+      // Handle missing section gracefully, maybe redirect or show error?
+      // For now, let's try to find it or just error.
+      // Since our new URL structure REQUIRES section, we can assume it's there or 404.
+      return <div className="p-10 text-center">Missing Section Parameter</div>;
+  }
+
+  const item = await azureService.getItem(itemId, section);
+
+  if (!item) {
+      notFound();
+  }
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark font-display flex flex-col">
-      <Navbar />
       <main className="flex-1 px-6 md:px-10 py-8 max-w-[1600px] mx-auto w-full">
         {/* Breadcrumbs & Actions */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap gap-2 items-center text-sm">
-              <a className="text-neutral-500 hover:text-primary transition-colors font-medium" href="#">Inventory</a>
+              <a className="text-neutral-500 hover:text-primary transition-colors font-medium" href="/stocks">Inventory</a>
               <span className="text-neutral-500 font-medium">/</span>
-              <a className="text-neutral-500 hover:text-primary transition-colors font-medium" href="#">Medicines</a>
+              <a className="text-neutral-500 hover:text-primary transition-colors font-medium" href="#">{item.category}</a>
               <span className="text-neutral-500 font-medium">/</span>
-              <span className="text-neutral-dark dark:text-white font-medium">Antibiotics</span>
+              <span className="text-neutral-dark dark:text-white font-medium">{item.name}</span>
             </div>
-            <h1 className="text-neutral-dark dark:text-white text-3xl font-bold leading-tight tracking-tight">Amoxicillin 500mg</h1>
+            <h1 className="text-neutral-dark dark:text-white text-3xl font-bold leading-tight tracking-tight">{item.name}</h1>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a190b] hover:bg-neutral-50 dark:hover:bg-[#23220f] text-neutral-dark dark:text-white font-medium text-sm transition-colors">
-              <span className="material-symbols-outlined text-[18px]">share</span>
-              Share Report
-            </button>
-            <button className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-neutral-dark font-bold text-sm transition-colors shadow-lg shadow-primary/20">
-              <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
-              Reorder Stock
-            </button>
+            <ItemHeaderActions />
           </div>
         </div>
 
@@ -36,7 +52,7 @@ export default function ItemPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Panel: Item Profile */}
           <div className="lg:col-span-3 flex flex-col gap-6">
-            <ItemProfileCard />
+            <ItemProfileCard item={item} />
 
             {/* Quick Stats Mini */}
             <div className="bg-white dark:bg-[#1a190b] rounded-xl p-5 shadow-sm border border-neutral-100 dark:border-neutral-700">
@@ -46,7 +62,7 @@ export default function ItemPage() {
               </h3>
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500">Batch #9021</span>
+                  <span className="text-neutral-500">Batch #{item.batchNumber || 'N/A'}</span>
                   <span className="text-green-600 font-medium">Passed</span>
                 </div>
                 <div className="flex justify-between text-sm">

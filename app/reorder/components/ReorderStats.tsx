@@ -2,38 +2,34 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
-import stockData from '@/data/sampleStockData.json';
-import { filterStockData, getStockStatus, StockItem } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
 
-export function ReorderStats() {
+interface ReorderStatsProps {
+    items: StockItem[];
+}
+
+export function ReorderStats({ items }: ReorderStatsProps) {
   const searchParams = useSearchParams();
 
   const stats = useMemo(() => {
-    const filters = {
-      search: searchParams.get('search') || '',
-      criticalOnly: searchParams.get('criticalOnly') === 'true',
-      lowLeadTime: searchParams.get('lowLeadTime') === 'true',
-      lifeSaving: searchParams.get('lifeSaving') === 'true',
-      dateRange: 'all',
-      category: 'all',
-      status: 'all',
-      location: 'all'
-    };
+    // Determine status based on minQuantity
+    const atRiskItems = items.filter(item => {
+        const minQty = item.minQuantity || 20;
+        return item.quantity <= (minQty * 1.5); // Low or Critical
+    });
 
-    const filtered = filterStockData(stockData as StockItem[], filters);
-    const atRisk = filtered.filter(item => {
-      const status = getStockStatus(item.closing_stock, item.opening_stock);
-      return status === 'critical' || status === 'low';
-    }).length;
+    const atRisk = atRiskItems.length;
 
-    // Mock stock-out value: (opening - closing) * $10 average
-    const totalValue = filtered.reduce((acc, item) => {
-      const missing = Math.max(0, item.opening_stock - item.closing_stock);
-      return acc + (missing * 10);
+    // Calculate value of needed stock (Targeting ~100 units or 3*minQty as 'safe' level)
+    // Simplified: Cost to bring everything up to 100
+    const totalValue = atRiskItems.reduce((acc, item) => {
+      const target = 100; // Mock Max Capacity
+      const missing = Math.max(0, target - item.quantity);
+      return acc + (missing * item.price);
     }, 0);
 
     return { atRisk, totalValue };
-  }, [searchParams]);
+  }, [items]);
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">

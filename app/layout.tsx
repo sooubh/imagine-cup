@@ -1,13 +1,14 @@
 /* eslint-disable @next/next/no-page-custom-font */
+'use client';
+
 import type { Metadata } from 'next';
 import './globals.css';
-import { Navbar } from '@/components/Navbar';
+import { Shell } from '@/components/Shell';
 import { Providers } from './providers';
-
-export const metadata: Metadata = {
-  title: 'StockHealth AI',
-  description: 'AI-Powered Stock Health & Early Warning System',
-};
+import { ToastProvider } from './context/ToastContext';
+import { LedgerBot } from '@/components/LedgerBot';
+import { GlobalSearch } from '@/components/GlobalSearch';
+import { useState, useEffect } from 'react';
 
 export default function RootLayout({
   children,
@@ -24,10 +25,37 @@ export default function RootLayout({
       </head>
       <body className="font-body bg-background-light dark:bg-background-dark text-neutral-dark dark:text-white transition-colors duration-300">
         <Providers>
-          <Navbar />
-          {children}
+          <ToastProvider>
+            <LayoutContent>{children}</LayoutContent>
+          </ToastProvider>
         </Providers>
       </body>
     </html>
+  );
+}
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <>
+      <Shell onSearchClick={() => setIsSearchOpen(true)}>
+        {children}
+      </Shell>
+      <LedgerBot />
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    </>
   );
 }

@@ -1,51 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AlertTriangle, Info, CheckCircle, X } from 'lucide-react';
 import { clsx } from 'clsx';
-
-interface Notification {
-    id: string;
-    type: 'alert' | 'info' | 'success';
-    title: string;
-    message: string;
-    time: string;
-    read: boolean;
-}
-
-const sampleNotifications: Notification[] = [
-    {
-        id: '1',
-        type: 'alert',
-        title: 'Low Stock Alert',
-        message: 'Paracetamol 500mg is below reorder level.',
-        time: '2 mins ago',
-        read: false,
-    },
-    {
-        id: '2',
-        type: 'info',
-        title: 'System Update',
-        message: 'Dashboard maintenance scheduled for tonight.',
-        time: '1 hour ago',
-        read: false,
-    },
-    {
-        id: '3',
-        type: 'success',
-        title: 'Order Delivered',
-        message: 'Order #12345 has been delivered successfully.',
-        time: '2 hours ago',
-        read: true,
-    },
-];
+import { useNotifications } from '@/app/context/NotificationContext';
 
 export function NotificationsDropdown() {
     const [isOpen, setIsOpen] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
     const containerRef = useRef<HTMLDivElement>(null);
-
-    const unreadCount = notifications.filter((n) => !n.read).length;
+    const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -58,19 +21,9 @@ export function NotificationsDropdown() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const markAsRead = (id: string) => {
-        setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-        );
-    };
-
-    const markAllAsRead = () => {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    };
-
-    const deleteNotification = (id: string, e: React.MouseEvent) => {
+    const handleDelete = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        setNotifications(prev => prev.filter(n => n.id !== id));
+        deleteNotification(id);
     }
 
     return (
@@ -136,7 +89,7 @@ export function NotificationsDropdown() {
                                             <p className="text-xs text-neutral-400 mt-1">{notification.time}</p>
                                         </div>
                                         <button
-                                            onClick={(e) => deleteNotification(notification.id, e)}
+                                            onClick={(e) => handleDelete(notification.id, e)}
                                             className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-red-500 transition-all"
                                             title="Dismiss"
                                         >

@@ -2,6 +2,8 @@
 
 import { ThemeProvider } from 'next-themes';
 import { createContext, useContext, useState, useEffect } from 'react';
+import { NotificationProvider } from './context/NotificationContext';
+import { ToastProvider } from './context/ToastContext';
 
 type Density = 'comfortable' | 'compact';
 
@@ -21,18 +23,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
         setMounted(true);
     }, []);
 
-    if (!mounted) {
-        return <>{children}</>;
-    }
-
     return (
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <DensityContext.Provider value={{ density, setDensity }}>
-                <div data-density={density}>
-                    {children}
-                </div>
-            </DensityContext.Provider>
-        </ThemeProvider>
+        <ToastProvider>
+            <NotificationProvider>
+                {mounted ? (
+                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                        <DensityContext.Provider value={{ density, setDensity }}>
+                            <div data-density={density}>
+                                {children}
+                            </div>
+                        </DensityContext.Provider>
+                    </ThemeProvider>
+                ) : (
+                    <>{children}</>
+                )}
+            </NotificationProvider>
+        </ToastProvider>
     );
 }
 

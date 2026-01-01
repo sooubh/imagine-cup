@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Bell, Palette, Shield } from 'lucide-react';
+import { User, Bell, Palette, Shield, Database } from 'lucide-react';
 import { clsx } from 'clsx';
 import { SettingsTab } from '../page';
 
@@ -15,6 +15,7 @@ export function SettingsSidebar({ activeTab, onTabChange }: SettingsSidebarProps
         { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'appearance', label: 'Appearance', icon: Palette },
         { id: 'security', label: 'Security', icon: Shield },
+        { id: 'data', label: 'Data Management', icon: Database },
     ] as const;
 
     return (

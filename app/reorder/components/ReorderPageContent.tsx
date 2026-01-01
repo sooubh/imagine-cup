@@ -1,32 +1,57 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ReorderStats } from './ReorderStats';
 import { ReorderFilters } from './ReorderFilters';
 import { ReorderTable } from './ReorderTable';
 import { StickyActionFooter } from './StickyActionFooter';
 import { ItemDetailsModal } from './ItemDetailsModal';
 import { EditItemModal } from './EditItemModal';
-import { StockItem } from '../../dashboard/lib/utils';
+import { StockItem } from '@/lib/azureDefaults';
+import { markItemsAsOrdered } from '@/app/actions/procurement';
 
-export function ReorderPageContent() {
+interface ReorderPageContentProps {
+    initialItems: StockItem[];
+}
+
+export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showFeedback, setShowFeedback] = useState(false);
     const [activeItem, setActiveItem] = useState<StockItem | null>(null);
     const [modalMode, setModalMode] = useState<'edit' | 'details' | null>(null);
 
-    const handleMarkOrdered = () => {
+    // Filter Logic Client-Side (or could be server-side, but client is smoother for filters)
+    // Actually, ReorderTable does filtering. We just pass raw items.
+
+
+    const router = useRouter();
+
+    const handleMarkOrdered = async () => {
         if (selectedIds.length === 0) return;
 
-        // Mock action
-        console.log('Items marked as ordered:', selectedIds);
+        try {
+            const success = await markItemsAsOrdered(selectedIds);
+            if (success) {
+                setShowFeedback(true);
+                setSelectedIds([]);
+                setTimeout(() => {
+                    setShowFeedback(false);
+                }, 3000);
+            } else {
+                alert("Failed to mark items as ordered. Please try again.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("An error occurred.");
+        }
+    };
 
-        setShowFeedback(true);
-        setSelectedIds([]);
-
-        setTimeout(() => {
-            setShowFeedback(false);
-        }, 3000);
+    const handleSendToProcurement = () => {
+        if (selectedIds.length === 0) return;
+        const queryParams = new URLSearchParams();
+        queryParams.set('items', selectedIds.join(','));
+        router.push(`/procurement?${queryParams.toString()}`);
     };
 
     const handleView = (item: StockItem) => {
@@ -39,6 +64,16 @@ export function ReorderPageContent() {
         setModalMode('edit');
     };
 
+    const handleSaveEdit = async (updatedItem: StockItem) => {
+        // In a real implementation, this would call an API to update the item
+        // For now, we'll just refresh the page to show any updates
+        setModalMode(null);
+        setActiveItem(null);
+        
+        // Trigger a page refresh to reload data from server
+        router.refresh();
+    };
+
     return (
         <div className="w-full max-w-[1440px] mx-auto pb-12 px-4 md:px-6">
             {showFeedback && (
@@ -49,9 +84,10 @@ export function ReorderPageContent() {
                     </div>
                 </div>
             )}
-            <ReorderStats />
+            <ReorderStats items={initialItems} />
             <ReorderFilters />
             <ReorderTable
+                items={initialItems}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 onViewItem={handleView}
@@ -60,14 +96,14 @@ export function ReorderPageContent() {
             <StickyActionFooter
                 selectedCount={selectedIds.length}
                 onMarkOrdered={handleMarkOrdered}
-                onSendToProcurement={() => console.log('Sending to procurement:', selectedIds)}
+                onSendToProcurement={handleSendToProcurement}
             />
 
             {activeItem && modalMode === 'details' && (
                 <ItemDetailsModal item={activeItem} onClose={() => setModalMode(null)} />
             )}
             {activeItem && modalMode === 'edit' && (
-                <EditItemModal item={activeItem} onClose={() => setModalMode(null)} />
+                <EditItemModal item={activeItem} onClose={() => setModalMode(null)} onSave={handleSaveEdit} />
             )}
         </div>
     );
