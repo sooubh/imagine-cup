@@ -7,19 +7,35 @@ import { useRouter } from "next/navigation";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Papa from "papaparse";
 import DummyDataGenerator from "@/components/DummyDataGenerator";
+import { SIMULATED_USERS, UserProfile } from "@/lib/auth";
 
 export default function AddItemPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  
+  const [user, setUser] = useState<UserProfile | null>(null);
+
   // Voice Input State
   const [isListening, setIsListening] = useState(false);
 
   // Barcode Scanner State
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+
+  useEffect(() => {
+    // Client-side cookie reading to get current user
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+    }
+    const userId = getCookie('simulated_user_id');
+    if (userId) {
+      const foundUser = SIMULATED_USERS.find(u => u.id === userId);
+      if (foundUser) setUser(foundUser);
+    }
+  }, []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -42,7 +58,7 @@ export default function AddItemPage() {
     // @ts-ignore
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    
+
     recognition.continuous = false;
     recognition.lang = 'en-US';
     recognition.interimResults = false;
@@ -78,7 +94,7 @@ export default function AddItemPage() {
         { fps: 10, qrbox: { width: 250, height: 250 } },
         false
       );
-      
+
       scanner.render((decodedText) => {
         // Success callback
         setFormData(prev => ({ ...prev, name: `Item ${decodedText}` })); // Using barcode as name suffix for now
@@ -87,19 +103,19 @@ export default function AddItemPage() {
       }, (error) => {
         // Error callback (ignore for scanning noise)
       });
-      
+
       scannerRef.current = scanner;
     }
 
     return () => {
-        if (scannerRef.current) {
-            try { scannerRef.current.clear(); } catch(e) {}
-        }
+      if (scannerRef.current) {
+        try { scannerRef.current.clear(); } catch (e) { }
+      }
     };
   }, [showScanner]);
 
   const toggleScanner = () => {
-      setShowScanner(!showScanner);
+    setShowScanner(!showScanner);
   };
 
   // --- CSV Upload Logic ---
@@ -114,26 +130,28 @@ export default function AddItemPage() {
         setLoading(true);
         setStatus("Uploading CSV data...");
         let count = 0;
-        
+
         for (const row of results.data as any[]) {
-             // Expect keys: name, category, quantity, price
-             if(row.name && row.quantity && row.price) {
-                 try {
-                     await fetch("/api/items", {
-                         method: "POST",
-                         headers: { "Content-Type": "application/json" },
-                         body: JSON.stringify({
-                             name: row.name,
-                             category: row.category || "General",
-                             quantity: Number(row.quantity),
-                             price: Number(row.price)
-                         }),
-                     });
-                     count++;
-                 } catch(err) {
-                     console.error("Failed to upload row", row);
-                 }
-             }
+          // Expect keys: name, category, quantity, price
+          if (row.name && row.quantity && row.price) {
+            try {
+              await fetch("/api/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: row.name,
+                  category: row.category || "General",
+                  quantity: Number(row.quantity),
+                  price: Number(row.price),
+                  ownerId: user?.id,
+                  section: user?.section
+                }),
+              });
+              count++;
+            } catch (err) {
+              console.error("Failed to upload row", row);
+            }
+          }
         }
         setSuccess(true);
         setError(`Uploaded ${count} items from CSV.`);
@@ -141,7 +159,7 @@ export default function AddItemPage() {
         setStatus("");
       },
       error: (err) => {
-          setError("Failed to parse CSV file.");
+        setError("Failed to parse CSV file.");
       }
     });
   };
@@ -159,14 +177,18 @@ export default function AddItemPage() {
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          ownerId: user?.id,
+          section: user?.section
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to add item");
 
       setSuccess(true);
       setFormData({ name: "", category: "General", quantity: "", price: "" });
-      
+
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setError("Failed to save item. Please check your connection.");
@@ -179,42 +201,42 @@ export default function AddItemPage() {
     <div className="min-h-screen bg-[#0a0a12] text-white p-6 md:p-12 font-sans flex flex-col items-center relative overflow-y-auto">
       {/* Background decorations */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
-         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 relative z-10 shadow-2xl mb-8"
       >
         <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-blue-500/20 rounded-2xl">
-                <Server className="w-8 h-8 text-blue-400" />
-            </div>
-            <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                    Add Inventory
-                </h1>
-                <p className="text-gray-400 text-sm">Add single items or bulk upload via CSV</p>
-            </div>
+          <div className="p-3 bg-blue-500/20 rounded-2xl">
+            <Server className="w-8 h-8 text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              Add Inventory
+            </h1>
+            <p className="text-gray-400 text-sm">Add single items or bulk upload via CSV</p>
+          </div>
         </div>
 
         {/* CSV Upload Section */}
         <div className="mb-8 p-4 border border-dashed border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-colors relative group">
-            <div className="flex items-center justify-center gap-4 cursor-pointer">
-                <Upload className="w-6 h-6 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                <div className="text-center">
-                    <p className="text-sm font-medium text-gray-300 group-hover:text-white">Upload CSV File for Bulk Entry</p>
-                    <p className="text-xs text-gray-500">Headers: name, category, quantity, price</p>
-                </div>
+          <div className="flex items-center justify-center gap-4 cursor-pointer">
+            <Upload className="w-6 h-6 text-gray-400 group-hover:text-blue-400 transition-colors" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-300 group-hover:text-white">Upload CSV File for Bulk Entry</p>
+              <p className="text-xs text-gray-500">Headers: name, category, quantity, price</p>
             </div>
-            <input 
-                type="file" 
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
+          </div>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -223,55 +245,55 @@ export default function AddItemPage() {
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm text-gray-400 font-medium ml-1">Item Name</label>
               <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        placeholder="e.g. Surgical Masks"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                    <button 
-                        type="button" 
-                        onClick={startListening}
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
-                        title="Voice Input"
-                    >
-                        <Mic className="w-5 h-5" />
-                    </button>
-                  </div>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    placeholder="e.g. Surgical Masks"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  />
                   <button
                     type="button"
-                    onClick={toggleScanner}
-                    className="aspect-square bg-white/5 border border-white/10 rounded-xl flex items-center justify-center hover:bg-white/10 hover:border-blue-500/30 transition-all"
-                    title="Scan Barcode"
+                    onClick={startListening}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                    title="Voice Input"
                   >
-                      <ScanBarcode className="w-6 h-6 text-gray-300" />
+                    <Mic className="w-5 h-5" />
                   </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleScanner}
+                  className="aspect-square bg-white/5 border border-white/10 rounded-xl flex items-center justify-center hover:bg-white/10 hover:border-blue-500/30 transition-all"
+                  title="Scan Barcode"
+                >
+                  <ScanBarcode className="w-6 h-6 text-gray-300" />
+                </button>
               </div>
             </div>
 
             {/* Barcode Scanner Overlay */}
             <AnimatePresence>
-                {showScanner && (
-                    <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="md:col-span-2 bg-black/50 rounded-xl overflow-hidden relative"
-                    >
-                        <div id="reader" className="w-full bg-black"></div>
-                        <button 
-                            type="button" 
-                            onClick={toggleScanner}
-                            className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </motion.div>
-                )}
+              {showScanner && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="md:col-span-2 bg-black/50 rounded-xl overflow-hidden relative"
+                >
+                  <div id="reader" className="w-full bg-black"></div>
+                  <button
+                    type="button"
+                    onClick={toggleScanner}
+                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </motion.div>
+              )}
             </AnimatePresence>
 
 
@@ -325,39 +347,39 @@ export default function AddItemPage() {
 
           {/* Status Messages */}
           {error && (
-            <motion.div 
-                initial={{ opacity: 0, height: 0 }} 
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl flex items-center gap-2"
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl flex items-center gap-2"
             >
-                <AlertCircle className="w-5 h-5" />
-                {error}
+              <AlertCircle className="w-5 h-5" />
+              {error}
             </motion.div>
           )}
 
           {success && (
-            <motion.div 
-                initial={{ opacity: 0, height: 0 }} 
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl flex items-center gap-2"
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl flex items-center gap-2"
             >
-                <CheckCircle className="w-5 h-5" />
-                {status ? "Batch operation completed!" : "Item added successfully to database!"}
+              <CheckCircle className="w-5 h-5" />
+              {status ? "Batch operation completed!" : "Item added successfully to database!"}
             </motion.div>
           )}
 
           {/* Actions */}
           <div className="pt-4 flex gap-4">
             <button
-                type="button"
-                onClick={() => router.back()}
-                className="flex-1 py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all"
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all"
             >
-                Cancel
+              Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !user}
               className="flex-[2] py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -375,7 +397,7 @@ export default function AddItemPage() {
           </div>
         </form>
       </motion.div>
-      
+
       {/* Dummy Data Generator Component */}
       <DummyDataGenerator />
     </div>
