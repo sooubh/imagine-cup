@@ -17,7 +17,7 @@ export interface StockItem {
     unit?: string;       // e.g., 'box', 'vial', 'kg'
     minQuantity?: number; // Threshold for reorder alert
     ownerId: string;
-    section: 'PSD' | 'Hospital' | 'NGO';
+    section: 'FDC' | 'Hospital' | 'NGO';
 }
 
 // Configuration
@@ -27,7 +27,7 @@ const DATABASE_NAME = "InventoryDB";
 
 // Map Sections to Container Names
 const CONTAINERS = {
-    PSD: "Items_PSD",
+    FDC: "Items_FDC",
     Hospital: "Items_Hospital",
     NGO: "Items_NGO"
 };
@@ -513,12 +513,12 @@ export class AzureInventoryService {
     }
 
     // ALL ITEMS now requires knowing the SECTION (Container)
-    async getAllItems(section?: string): Promise<StockItem[]> {
+    async getAllItems(section?: string, pageSize?: number, continuationToken?: string): Promise<StockItem[] | { items: StockItem[], continuationToken?: string }> {
         console.log(`🚀 getAllItems: Started for section '${section}'`);
 
         if (!section) {
             console.warn("⚠️ getAllItems: No section provided. Returning empty.");
-            return [];
+            return pageSize !== undefined ? { items: [], continuationToken: undefined } : [];
         }
 
         if (this.isConnected && this.client) {
@@ -532,7 +532,20 @@ export class AzureInventoryService {
                 const container = this.getContainer(section);
                 if (container) {
                     console.log(`⚡ Querying Cosmos container: ${container.id} for section: ${section}...`);
-                    // Filter by section to be precise, even if container is shared or fallback is used
+
+                    // If pageSize provided, use pagination
+                    if (pageSize !== undefined) {
+                        const queryIterator = container.items.query({
+                            query: "SELECT * from c WHERE c.section = @section ORDER BY c.lastUpdated DESC",
+                            parameters: [{ name: "@section", value: section }]
+                        }, { maxItemCount: pageSize, continuationToken });
+
+                        const { resources, continuationToken: newToken } = await queryIterator.fetchNext();
+                        console.log(`✅ getAllItems (paginated): Found ${resources.length} items`);
+                        return { items: resources as StockItem[], continuationToken: newToken };
+                    }
+
+                    // Original behavior - fetch all
                     const { resources } = await container.items.query({
                         query: "SELECT * from c WHERE c.section = @section",
                         parameters: [{ name: "@section", value: section }]
@@ -545,12 +558,12 @@ export class AzureInventoryService {
                 }
             } catch (error) {
                 console.error(`❌ getAllItems Error fetching from ${section}:`, error);
-                return [];
+                return pageSize !== undefined ? { items: [], continuationToken: undefined } : [];
             }
         } else {
             console.warn("⚠️ getAllItems: Azure not connected");
         }
-        return [];
+        return pageSize !== undefined ? { items: [], continuationToken: undefined } : [];
     }
 
     // FETCH ALL across ALL containers (For Super Admin or initial Debug)
@@ -667,6 +680,82 @@ export class AzureInventoryService {
         } catch (error) {
             console.error("Failed to delete from Azure:", error);
             return false;
+        }
+    }
+
+    // --- STORE-SPECIFIC QUERIES (NEW) ---
+
+    /**
+     * Get stores by section - for admins to see their sub-stores
+     */
+    async getStoresBySection(section: string): Promise<SystemStore[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(STORES_CONTAINER);
+            const { resources } = await container.items.query({
+                query: "SELECT * FROM c WHERE c.section = @section AND c.status = 'ACTIVE'",
+                parameters: [{ name: "@section", value: section }]
+            }).fetchAll();
+            return resources as SystemStore[];
+        } catch (e) {
+            console.error("Failed to fetch stores by section:", e);
+            return [];
+        }
+    }
+
+    /**
+     * Get items for a specific store (by storeId)
+     */
+    async getItemsByStore(storeId: string, section: string): Promise<StockItem[]> {
+        if (!this.isConnected) return [];
+        try {
+            const container = this.getContainer(section);
+            if (!container) return [];
+
+            const { resources } = await container.items.query({
+                query: "SELECT * FROM c WHERE c.ownerId = @storeId",
+                parameters: [{ name: "@storeId", value: storeId }]
+            }).fetchAll();
+            return resources as StockItem[];
+        } catch (e) {
+            console.error("Failed to fetch items for store:", e);
+            return [];
+        }
+    }
+
+    /**
+     * Get transactions for a specific store
+     */
+    async getTransactionsByStore(storeId: string): Promise<Transaction[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(TRANSACTIONS_CONTAINER);
+            const { resources } = await container.items.query({
+                query: "SELECT * FROM c WHERE c.performedBy = @storeId ORDER BY c.date DESC",
+                parameters: [{ name: "@storeId", value: storeId }]
+            }).fetchAll();
+            return resources as Transaction[];
+        } catch (e) {
+            console.error("Failed to fetch transactions for store:", e);
+            return [];
+        }
+    }
+
+    /**
+     * Get orders for a specific store
+     */
+    async getOrdersByStore(storeId: string): Promise<PurchaseOrder[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            const { resources } = await container.items.query({
+                query: "SELECT * FROM c WHERE c.createdBy = @storeId ORDER BY c.dateCreated DESC",
+                parameters: [{ name: "@storeId", value: storeId }]
+            }).fetchAll();
+            return resources as PurchaseOrder[];
+        } catch (e) {
+            console.error("Failed to fetch orders for store:", e);
+            return [];
         }
     }
 }

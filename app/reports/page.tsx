@@ -11,22 +11,60 @@ import { SalesReport } from './components/SalesReport';
 import { InventoryReport } from './components/InventoryReport';
 import { TeamReport } from './components/TeamReport';
 import { ProcurementReport } from './components/ProcurementReport';
+import { StoreSelector } from '@/components/StoreSelector';
 
 // Actions
 import { getGlobalSalesData, getGlobalInventoryData, getGlobalTeamData, getGlobalProcurementData } from '@/app/actions/reports';
-import { Transaction, StockItem, Activity, PurchaseOrder } from '@/lib/azureDefaults';
+import { getStoresAction } from '@/app/actions/admin';
+import { Transaction, StockItem, Activity, PurchaseOrder, SystemStore } from '@/lib/azureDefaults';
+import { UserProfile, SIMULATED_USERS } from '@/lib/auth';
 
 import { StaggerContainer, StaggerItem } from '@/components/animations/StaggerContainer';
 import { AnimatePresence } from 'framer-motion';
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | 'all'>('all');
+  const [availableStores, setAvailableStores] = useState<SystemStore[]>([]);
+  
   // ... state declarations ...
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventory, setInventory] = useState<StockItem[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get current user on mount
+  useEffect(() => {
+    const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+    };
+    const userId = getCookie('simulated_user_id');
+    if (userId) {
+        const user = SIMULATED_USERS.find(u => u.id === userId);
+        if (user) {
+            setCurrentUser(user);
+            // For retailers, auto-set to their store
+            if (user.role === 'retailer') {
+                setSelectedStoreId(userId);
+            }
+        }
+    }
+  }, []);
+
+  // Fetch stores for current user's section
+  useEffect(() => {
+    if (currentUser) {
+        getStoresAction(currentUser.section).then(stores => {
+            // Filter out organization stores 
+            const filtered = stores.filter(s => !['Hospital', 'PSD', 'NGO'].includes(s.name));
+            setAvailableStores(filtered);
+        });
+    }
+  }, [currentUser]);
 
   // ... useEffect logic ...
   useEffect(() => {

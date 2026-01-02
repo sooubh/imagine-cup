@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'retailer';
-export type UserSection = 'PSD' | 'Hospital' | 'NGO';
+export type UserSection = 'FDC' | 'Hospital' | 'NGO';
 
 export interface UserProfile {
     id: string;
@@ -10,11 +10,11 @@ export interface UserProfile {
 }
 
 export const SIMULATED_USERS: UserProfile[] = [
-    // PSD Section
-    { id: 'admin-psd', name: 'District Admin (PSD)', role: 'admin', section: 'PSD', email: 'admin@psd.gov' },
-    { id: 'psd-r1', name: 'Central Store A', role: 'retailer', section: 'PSD', email: 'storeA@psd.gov' },
-    { id: 'psd-r2', name: 'Central Store B', role: 'retailer', section: 'PSD', email: 'storeB@psd.gov' },
-    { id: 'psd-r3', name: 'Central Store C', role: 'retailer', section: 'PSD', email: 'storeC@psd.gov' },
+    // FDC (Food Distribution Center) Section
+    { id: 'admin-psd', name: 'District Admin (FDC)', role: 'admin', section: 'FDC', email: 'admin@fooddist.gov' },
+    { id: 'psd-r1', name: 'Central Store A', role: 'retailer', section: 'FDC', email: 'storeA@fooddist.gov' },
+    { id: 'psd-r2', name: 'Central Store B', role: 'retailer', section: 'FDC', email: 'storeB@fooddist.gov' },
+    { id: 'psd-r3', name: 'Central Store C', role: 'retailer', section: 'FDC', email: 'storeC@fooddist.gov' },
 
     // Hospital Section
     { id: 'admin-hosp', name: 'Hospital Director', role: 'admin', section: 'Hospital', email: 'director@hospital.gov' },

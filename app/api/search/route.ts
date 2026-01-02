@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { azureService } from '@/lib/azureDefaults';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
+import { SIMULATED_USERS } from '@/lib/auth';
 
 // Input Validation Schema using Zod
 const searchSchema = z.object({
@@ -12,6 +14,30 @@ const searchSchema = z.object({
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
+
+        // Get current user from cookies
+        const cookieStore = await cookies();
+        const userId = cookieStore.get('simulated_user_id')?.value;
+
+        if (!userId) {
+            return NextResponse.json({
+                results: [],
+                count: 0,
+                error: "Unauthorized - Please log in"
+            }, { status: 401 });
+        }
+
+        const currentUser = SIMULATED_USERS.find(u => u.id === userId);
+
+        if (!currentUser) {
+            return NextResponse.json({
+                results: [],
+                count: 0,
+                error: "User not found"
+            }, { status: 401 });
+        }
+
+        console.log('🔍 Search initiated by:', currentUser.name, '| Role:', currentUser.role, '| Section:', currentUser.section);
 
         // Validate inputs
         const result = searchSchema.safeParse({
@@ -29,18 +55,34 @@ export async function GET(request: Request) {
             }, { status: 400 });
         }
 
-        const { query, section, category } = result.data;
+        let { query, section, category } = result.data;
 
         if (!query || query.length < 2) {
             return NextResponse.json({ results: [], count: 0, query });
         }
 
-        // Fetch items from all sections or specific section
-        let allItems = [];
-        if (section === 'all') {
-            allItems = await azureService.getGlobalItems();
-        } else {
-            allItems = await azureService.getAllItems(section);
+        // ENFORCE ROLE-BASED FILTERING
+        // Admins can only see their section's data
+        // Retailers can only see their own store data (filtered by ownerId)
+        if (currentUser.role === 'admin') {
+            // Force section to be user's section, ignore any 'all' request
+            section = currentUser.section;
+            console.log('🔒 Admin search restricted to section:', section);
+        } else if (currentUser.role === 'retailer') {
+            // Retailers see only their section
+            section = currentUser.section;
+            console.log('🔒 Retailer search restricted to section:', section);
+        }
+
+        // Fetch items from user's allowed section
+        let allItems = await azureService.getAllItems(section);
+
+        console.log(`📦 Fetched ${allItems.length} items from section: ${section}`);
+
+        // Additional filtering for retailers - only show items they own
+        if (currentUser.role === 'retailer') {
+            allItems = allItems.filter(item => item.ownerId === currentUser.id);
+            console.log(`🔒 Retailer filter applied - ${allItems.length} items owned by user`);
         }
 
         // Filter items based on search query
@@ -69,11 +111,15 @@ export async function GET(request: Request) {
         // Limit results to 50
         const limitedResults = results.slice(0, 50);
 
+        console.log(`✅ Returning ${limitedResults.length} search results (${results.length} total matches)`);
+
         return NextResponse.json({
             results: limitedResults,
             count: limitedResults.length,
             total: results.length,
-            query
+            query,
+            userSection: currentUser.section,
+            userRole: currentUser.role
         });
 
     } catch (error) {

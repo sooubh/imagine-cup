@@ -7,8 +7,9 @@ import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [selectedSection, setSelectedSection] = useState<UserSection>('PSD');
+  const [selectedSection, setSelectedSection] = useState<UserSection>('FDC');
   const [loading, setLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
 
   // Filter users by selected section
   const sectionUsers = SIMULATED_USERS.filter(u => u.section === selectedSection);
@@ -25,6 +26,28 @@ export default function LoginPage() {
         router.push('/dashboard');
         router.refresh();
     }, 800);
+  };
+
+  const handleCleanupDatabase = async () => {
+    if (!confirm('⚠️ This will DELETE all unused database containers. This action cannot be undone. Continue?')) {
+      return;
+    }
+
+    setCleanupLoading(true);
+    try {
+      const { cleanupDatabaseContainers } = await import('@/app/actions/cleanupDatabase');
+      const result = await cleanupDatabaseContainers();
+      
+      if (result.success) {
+        alert(`✅ ${result.message}\n\nDeleted containers:\n${result.deleted.join('\n')}`);
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Cleanup failed: ${error}`);
+    } finally {
+      setCleanupLoading(false);
+    }
   };
 
   return (
@@ -46,14 +69,14 @@ export default function LoginPage() {
          {/* Section Pills */}
          <div className="flex flex-wrap justify-center gap-4 mb-14">
             <button
-                onClick={() => setSelectedSection('PSD')}
+                onClick={() => setSelectedSection('FDC')}
                 className={`px-8 py-2.5 rounded-full font-bold text-sm transition-all duration-300 border ${
-                    selectedSection === 'PSD' 
+                    selectedSection === 'FDC' 
                     ? 'bg-blue-600 border-blue-400 shadow-[0_0_25px_rgba(37,99,235,0.5)] text-white scale-105' 
                     : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white hover:border-white/20'
                 }`}
             >
-                PSD Section
+                Food Distribution Center
             </button>
             <button
                 onClick={() => setSelectedSection('Hospital')}
@@ -155,9 +178,29 @@ export default function LoginPage() {
             </motion.div>
          </div>
 
-         <p className="mt-16 text-center text-slate-600 text-xs font-medium tracking-wide">
-            © 2025 StockHealth AI • Imagine Cup Prototype
-         </p>
+         <div className="mt-16 flex flex-col items-center gap-4">
+           <button
+             onClick={handleCleanupDatabase}
+             disabled={cleanupLoading}
+             className="px-6 py-2 rounded-lg bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 text-red-400 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+           >
+             {cleanupLoading ? (
+               <>
+                 <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                 Cleaning Database...
+               </>
+             ) : (
+               <>
+                 <span className="material-symbols-outlined text-sm">delete_sweep</span>
+                 Cleanup Unused Containers
+               </>
+             )}
+           </button>
+           
+           <p className="text-center text-slate-600 text-xs font-medium tracking-wide">
+             © 2025 StockHealth AI • Imagine Cup Prototype
+           </p>
+         </div>
        </div>
     </div>
   );

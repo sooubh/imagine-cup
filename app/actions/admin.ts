@@ -7,13 +7,21 @@ import { revalidatePath } from "next/cache";
 
 export async function getStoresAction(sectionFilter?: string): Promise<SystemStore[]> {
     try {
+        console.log('🏪 getStoresAction called with sectionFilter:', sectionFilter);
+
         const stores = await azureService.getSystemStores();
+        console.log('📊 Total stores from database:', stores.length);
+
         // Filter out main organizations (Hospital, PSD, NGO) as per user request
         const organizationNames = ["Hospital", "PSD", "NGO"];
         let filtered = stores.filter(store => !organizationNames.includes(store.name));
 
+        console.log('📊 After removing org names:', filtered.length);
+
+        // Apply section filter if provided
         if (sectionFilter) {
             filtered = filtered.filter(store => store.section === sectionFilter);
+            console.log(`📊 After filtering by section "${sectionFilter}":`, filtered.length);
         }
 
         return filtered;

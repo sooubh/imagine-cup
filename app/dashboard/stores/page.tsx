@@ -59,7 +59,13 @@ export default function StoresManagementPage() {
         setLoading(true);
         // Use provided section or fallback to currentUser's section if available
         const filterSection = section || currentUser?.section;
+        
+        console.log('🔍 Fetching stores for section:', filterSection);
+        
+        // Pass the section filter to ensure only stores from this section are returned
         const data = await getStoresAction(filterSection);
+        
+        console.log('📦 Received stores:', data.length, 'stores for section:', filterSection);
         
         // Fetch inventory for each store to show stats
         const storesWithInventory = await Promise.all(

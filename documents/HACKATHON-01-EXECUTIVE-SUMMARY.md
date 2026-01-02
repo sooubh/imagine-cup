@@ -1,12 +1,50 @@
-# MedChain: Multi-Sector Healthcare Supply Chain Platform
+# LedgerShield: Unified Supply Chain Platform for Healthcare & Public Distribution
 
-## Three-Sector Solution for Complete Healthcare Coverage
+## The Problem: Siloed Data Leads to Empty Shelves
+
+**Hospitals, public distribution systems (PSD), and NGOs struggle to keep medicines, food, and other essentials available in the right place at the right time.**
+
+### Why This Happens
+
+Data on sales/usage, inventory, and purchase orders often lives in **separate systems**:
+- 📊 Sales data in one Excel sheet
+- 📦 Inventory in another system  
+- 📝 Purchase orders on paper or emails
+- ❌ **No unified view**
+
+**Result**: Teams spot stock issues only when **shelves are already empty or overfull**.
+
+### The Cost
+```
+   PUBLIC (PSD)              PRIVATE (Hospital)           NGO
+       ↓                            ↓                       ↓
+Government drugs          Paid healthcare          Relief programs
+    ₹5000 Cr/year            ₹2 lakh Cr/year         ₹500 Cr/year
+       ↓                            ↓                       ↓
+   30% wastage               20% wastage              35% wastage
+   Stock-outs common         Overstocking             Donor accountability
+       ↓                            ↓                       ↓
+      PATIENTS SUFFER - Medicine not available when needed
+```
 
 ---
 
-## The Three-Sector Approach
+## The Solution: LedgerShield
 
-MedChain uniquely serves **three critical pillars** of healthcare delivery:
+**LedgerShield** brings all data together in **one unified platform**:
+
+✅ **Real-time Inventory** - See what's in stock, where, and when  
+✅ **Integrated Sales Tracking** - Know consumption patterns instantly  
+✅ **Smart Procurement** - Auto-generate orders before stock-outs  
+✅ **AI-Powered Insights** - Predict demand, prevent wastage  
+✅ **Role-Based Access** - Admins see all stores, retailers see only theirs  
+✅ **Interactive Analytics** - Visualize trends with beautiful charts  
+
+---
+
+## Three-Sector Approach
+
+LedgerShield uniquely serves **three critical pillars** of healthcare delivery:
 
 ### 🏛️ Public Supply Depot (PSD)
 Government medical supply distribution system

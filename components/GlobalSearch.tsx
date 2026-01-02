@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { StockItem } from '@/lib/azureDefaults';
 import { useRouter } from 'next/navigation';
+import { SIMULATED_USERS, UserProfile } from '@/lib/auth';
 
 interface SearchResult {
     results: StockItem[];
@@ -20,9 +21,28 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
     const [selectedSection, setSelectedSection] = useState('all');
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
+
+    // Get current user on mount
+    useEffect(() => {
+        const getCookie = (name: string) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop()?.split(';').shift();
+        };
+        const userId = getCookie('simulated_user_id');
+        if (userId) {
+            const user = SIMULATED_USERS.find(u => u.id === userId);
+            if (user) {
+                setCurrentUser(user);
+                // Set initial section to user's section
+                setSelectedSection(user.section);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         if (isOpen && inputRef.current) {
@@ -103,21 +123,16 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         )}
                     </div>
                     
-                    <div className="flex gap-2 mt-3">
-                        {['all', 'PSD', 'Hospital', 'NGO'].map((section) => (
-                            <button
-                                key={section}
-                                onClick={() => setSelectedSection(section)}
-                                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                                    selectedSection === section
-                                        ? 'bg-primary text-black'
-                                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                                }`}
-                            >
-                                {section === 'all' ? 'All Sections' : section}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Section filter - Only show user's section, no cross-section access */}
+                    {currentUser && (
+                        <div className="flex gap-2 mt-3 items-center">
+                            <span className="text-xs text-neutral-500 font-medium">Searching in:</span>
+                            <div className="px-3 py-1 rounded-full text-xs font-bold bg-primary text-black">
+                                {currentUser.section}
+                            </div>
+                            <span className="text-xs text-neutral-400">({currentUser.role})</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="max-h-[60vh] overflow-y-auto">

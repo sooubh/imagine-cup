@@ -108,6 +108,62 @@ export function DataSection() {
                 </p>
             </div>
 
+            {/* Seed Fresh Data Section - NEW 450 items seeding */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 border border-emerald-200 dark:border-emerald-900/20 rounded-xl p-6">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h4 className="font-semibold text-emerald-900 dark:text-emerald-200 text-lg mb-2 flex items-center gap-2">
+                            <Database className="w-5 h-5" />
+                            Seed Fresh Data (450 Items)
+                        </h4>
+                        <p className="text-emerald-700 dark:text-emerald-300 text-sm mb-2">
+                            Seeds 50 realistic items to each of the 3 retailer stores per section.
+                        </p>
+                        <ul className="text-emerald-600 dark:text-emerald-400 text-xs space-y-1 ml-4">
+                            <li>• Deletes ALL existing data first</li>
+                            <li>• FDC: Central Store A, B, C (150 items)</li>
+                            <li>• Hospital: City General, Rural PHC 1, 2 (150 items)</li>
+                            <li>• NGO: Relief Camp Alpha, Beta, Mobile Unit 1 (150 items)</li>
+                            <li>• <strong>Total: 450 items</strong></li>
+                        </ul>
+                    </div>
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+                        <Server className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                </div>
+
+                <button 
+                    onClick={async () => {
+                        if (!confirm('⚠️ This will DELETE all existing data and seed 450 fresh items. Continue?')) return;
+                        setLoading(true);
+                        setLog([]);
+                        addLog("🌱 Starting fresh data seeding...");
+                        
+                        try {
+                            const { seedFreshData } = await import('@/app/actions/seedData');
+                            const result = await seedFreshData();
+                            
+                            if (result.success) {
+                                addLog(`✅ ${result.message}`);
+                                addLog(`📊 Stats: ${JSON.stringify(result.stats, null, 2)}`);
+                            } else {
+                                addLog(`❌ Error: ${result.message}`);
+                            }
+                        } catch (error) {
+                            addLog(`❌ Failed: ${error}`);
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading}
+                    className="w-full mt-4 py-4 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                    {loading ? <Server className="animate-pulse w-5 h-5" /> : <Database className="w-5 h-5" />}
+                    {loading ? "Seeding Data..." : "Seed Fresh Data (450 Items)"}
+                </button>
+            </div>
+
+            {/* Original Demo Data Section */}
             <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/20 rounded-xl p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div>

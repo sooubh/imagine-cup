@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Filter, Tag, X, Loader2 } from 'lucide-react';
-import { StockItem, Transaction } from '@/lib/azureDefaults';
+import { StockItem, Transaction, SystemStore } from '@/lib/azureDefaults';
 import InvoiceModal from '@/components/InvoiceModal';
 import { useToast } from '@/app/context/ToastContext';
 import { getUser, UserProfile } from '@/lib/auth';
+import { getStoresAction } from '@/app/actions/admin';
 
 interface CartItem {
     item: StockItem;
@@ -25,6 +26,10 @@ export default function SalesPage() {
     const [latestTransaction, setLatestTransaction] = useState<Transaction | null>(null);
     const [showInvoice, setShowInvoice] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
+    
+    // Store selection for admins
+    const [availableStores, setAvailableStores] = useState<SystemStore[]>([]);
+    const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
 
     const [showMobileCart, setShowMobileCart] = useState(false);
 
@@ -75,36 +80,71 @@ export default function SalesPage() {
             const userProfile = getUser(userId);
             if (userProfile) {
                 setUser(userProfile);
+                // For retailers, auto-select their own store
+                if (userProfile.role === 'retailer') {
+                    setSelectedStoreId(userId);
+                }
             }
         }
     }, []);
-
-    // Fetch inventory when user is loaded
+    
+    // Load stores for section - Include admin + retailers
     useEffect(() => {
         if (user) {
-            fetchInventory();
+            console.log(`🏪 POS: Loading stores for section ${user.section}`);
+            // Get admin + all retailers in this section
+            const { SIMULATED_USERS } = require('@/lib/auth');
+            const sectionUsers = SIMULATED_USERS.filter((u: any) => 
+                u.section === user.section && (u.role === 'admin' || u.role === 'retailer')
+            );
+            console.log(`✅ POS: Found ${sectionUsers.length} users (admin + retailers)`);
+            
+            // Convert users to store format for dropdown
+            const storesAsUsers = sectionUsers.map((u: any) => ({
+                id: u.id,
+                name: u.name,
+                section: u.section
+            }));
+            
+            setAvailableStores(storesAsUsers);
+            
+            // Auto-select first store for admins if none selected
+            if (user.role === 'admin' && !selectedStoreId && storesAsUsers.length > 0) {
+                setSelectedStoreId(storesAsUsers[0].id);
+            } else if (user.role === 'retailer') {
+                // Retailer always uses their own ID
+                setSelectedStoreId(user.id);
+            }
         }
     }, [user]);
 
+    // Fetch inventory when user is loaded OR when selected store changes
+    useEffect(() => {
+        if (user && selectedStoreId) {
+            fetchInventory();
+        }
+    }, [user, selectedStoreId]);
+
     const fetchInventory = async () => {
-        if (!user) return;
+        if (!user || !selectedStoreId) return;
         
         setIsLoading(true);
         try {
+            console.log(`📦 POS: Fetching inventory for section ${user.section}, store ${selectedStoreId}`);
             // Fetch items from user's section only
             const res = await fetch(`/api/items?section=${user.section}`);
             const data = await res.json();
             
+            console.log(`📥 POS: Received ${Array.isArray(data) ? data.length : 0} items from API`);
+            
             if (Array.isArray(data)) {
-                // Filter by ownerId for retailers, show all for admins
-                const filteredData = user.role === 'admin'
-                    ? data
-                    : data.filter(item => item.ownerId === user.id);
-                
+                // Filter by selected store's ownerId
+                const filteredData = data.filter(item => item.ownerId === selectedStoreId);
+                console.log(`✅ POS: Filtered to ${filteredData.length} items for store ${selectedStoreId}`);
                 setInventory(filteredData);
             }
         } catch (error) {
-            console.error("Failed to fetch inventory", error);
+            console.error("❌ POS: Failed to fetch inventory", error);
             toast.error('Error', 'Failed to load inventory');
         } finally {
             setIsLoading(false);
@@ -182,6 +222,17 @@ export default function SalesPage() {
                 const newQty = c.quantity + delta;
                 if (newQty < 1) return c;
                 if (newQty > c.item.quantity) return c;
+                return { ...c, quantity: newQty };
+            }
+            return c;
+        }));
+    };
+    
+    const setManualQuantity = (itemId: string, value: string) => {
+        const qty = parseInt(value) || 0;
+        setCart(prev => prev.map(c => {
+            if (c.item.id === itemId) {
+                const newQty = Math.max(1, Math.min(qty, c.item.quantity));
                 return { ...c, quantity: newQty };
             }
             return c;
@@ -282,7 +333,7 @@ export default function SalesPage() {
                     {/* Header Section */}
                     <header className="mb-2">
                         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 mb-3">
-                            <div>
+                            <div className="flex-1">
                                 <h1 className="text-xl md:text-2xl font-display font-bold text-neutral-dark dark:text-white tracking-tight flex items-center gap-2">
                                     Point of Sale
                                     <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
@@ -293,6 +344,28 @@ export default function SalesPage() {
                                     Browse and add items to cart
                                 </p>
                             </div>
+                            
+                            {/* Store Selector for Admins */}
+                            {user?.role === 'admin' && availableStores.length > 0 && (
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider ml-1">Selling From</label>
+                                    <select 
+                                        value={selectedStoreId || ''}
+                                        onChange={(e) => setSelectedStoreId(e.target.value)}
+                                        className="appearance-none bg-white dark:bg-neutral-800 rounded-lg px-3 py-2 text-xs font-semibold border-none ring-1 ring-neutral-200 dark:ring-neutral-800 text-neutral-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    >
+                                        {availableStores.map(store => (
+                                            <option key={store.id} value={store.id}>{store.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            {user?.role === 'retailer' && (
+                                <div className="px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+                                    <p className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider">Your Store</p>
+                                    <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mt-0.5">{user.name}</p>
+                                </div>
+                            )}
                             
                             <div className="relative group w-full lg:w-auto">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4 group-focus-within:text-primary transition-colors" />
@@ -503,7 +576,14 @@ export default function SalesPage() {
                                     >
                                         <Plus className="w-3 h-3" />
                                     </button>
-                                    <span className="text-xs font-mono font-bold w-5 text-center text-neutral-dark dark:text-white">{c.quantity}</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={c.item.quantity}
+                                        value={c.quantity}
+                                        onChange={(e) => setManualQuantity(c.item.id, e.target.value)}
+                                        className="text-xs font-mono font-bold w-8 text-center bg-transparent border-none focus:outline-none focus:bg-white dark:focus:bg-neutral-700 rounded px-0.5 text-neutral-dark dark:text-white"
+                                    />
                                     <button 
                                         onClick={() => updateQuantity(c.item.id, -1)} 
                                         className="p-1 hover:bg-white dark:hover:bg-neutral-700 rounded-md text-neutral-500 hover:text-red-500 transition-all"
