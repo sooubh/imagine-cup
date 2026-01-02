@@ -1,6 +1,30 @@
 // IMPORTANT: Hospital and NGO seed data arrays (50 items each)
 // Due to file size, these are defined separately and will be imported
 
+type SeedDataItem = {
+    name: string;
+    category: string;
+    quantity: number;
+    price: number;
+    status: "In Stock" | "Low Stock";
+    expiryDate: string;
+    manufacturingDate: string;
+    batchNumber: string;
+    supplier: string;
+    description: string;
+    unit: string;
+    minQuantity: number;
+};
+
+// Helper function to add days to a date
+const addDays = (date: Date, days: number): string => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result.toISOString();
+};
+
+const today = new Date();
+
 export const HOSPITAL_SEED_DATA: SeedDataItem[] = Array(50).fill(null).map((_, index) => {
     const baseItems = [
         { name: "Paracetamol 500mg", category: "Medicines", price: 2 },

@@ -16,7 +16,8 @@ export default async function ReorderPage() {
   if (!user) redirect('/');
 
   // Fetch Items Scoped to User
-  const allItems = await azureService.getAllItems(user.section);
+  const itemsResult = await azureService.getAllItems(user.section);
+  const allItems = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
   
   let myItems = [];
   if (user.role === 'admin') {

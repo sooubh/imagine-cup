@@ -14,7 +14,8 @@ export default async function StocksPage() {
   const user = getUser(userId);
   if (!user) redirect('/');
 
-  const allItems = await azureService.getAllItems(user.section);
+  const itemsResult = await azureService.getAllItems(user.section);
+  const allItems = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
   
   let myItems = [];
   if (user.role === 'admin') {

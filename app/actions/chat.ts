@@ -140,10 +140,13 @@ export async function chatWithLedgerBot(messages: { role: 'user' | 'bot' | 'syst
         const section = user?.section || 'Hospital';
 
         // 2. Fetch Real-time Data
-        const [items, activities] = await Promise.all([
+        const [itemsResult, activities] = await Promise.all([
             azureService.getAllItems(section),
             azureService.getRecentActivities(section, 10)
         ]);
+
+        // Extract items array from the result
+        const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
 
         // 3. Build Context String
         const contextData = getInventoryContext(items, activities);

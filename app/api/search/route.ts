@@ -75,7 +75,8 @@ export async function GET(request: Request) {
         }
 
         // Fetch items from user's allowed section
-        let allItems = await azureService.getAllItems(section);
+        const itemsResult = await azureService.getAllItems(section);
+        let allItems = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
 
         console.log(`📦 Fetched ${allItems.length} items from section: ${section}`);
 

@@ -39,7 +39,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
 
     // Process data for payment method chart
     const salesByMethod = transactions.reduce((acc, t) => {
-        acc[t.paymentMethod] = (acc[t.payMethod] || 0) + t.totalAmount;
+        acc[t.paymentMethod] = (acc[t.paymentMethod] || 0) + t.totalAmount;
         return acc;
     }, {} as Record<string, number>);
 
@@ -148,7 +148,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="value"

@@ -21,7 +21,8 @@ export async function chatWithDataAction(userMessage: string) {
         }
 
         // Fetch scoped data
-        const items = await azureService.getAllItems(section) as StockItem[];
+        const itemsResult = await azureService.getAllItems(section);
+        const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
         const activities = await azureService.getRecentActivities(section);
 
         const context = getInventoryContext(items, activities);
@@ -43,7 +44,8 @@ export async function getDashboardInsightAction() {
         const section = user?.section || 'Hospital';
 
         // Fetch fresh data
-        const items = await azureService.getAllItems(section) as StockItem[];
+        const itemsResult = await azureService.getAllItems(section);
+        const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
         // We only need items for the summary, but activities help context
         const context = getInventoryContext(items, []);
 

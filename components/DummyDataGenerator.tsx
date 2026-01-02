@@ -74,7 +74,7 @@ export default function DummyDataGenerator() {
 
     let baseItems = [];
     if (section === 'Hospital') baseItems = hospitalItems;
-    else if (section === 'PSD') baseItems = psdItems;
+    else if (section === 'FDC') baseItems = psdItems;
     else baseItems = ngoItems;
 
     // Helper for Dates
@@ -111,7 +111,7 @@ export default function DummyDataGenerator() {
             manufacturingDate: mfgDate,
             expiryDate: expDate,
             batchNumber: getBatch(),
-            supplier: section === 'Hospital' ? 'MediCorp Pharma' : section === 'PSD' ? 'Govt Supply Depot' : 'Global Aid Supplies',
+            supplier: section === 'Hospital' ? 'MediCorp Pharma' : section === 'FDC' ? 'Govt Supply Depot' : 'Global Aid Supplies',
             description: `Standard ${item.category} unit for ${section} distribution.`
         });
     }

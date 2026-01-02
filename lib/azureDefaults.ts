@@ -574,14 +574,16 @@ export class AzureInventoryService {
 
         // Static
         for (const section of Object.keys(CONTAINERS)) {
-            const items = await this.getAllItems(section);
+            const itemsResult = await this.getAllItems(section);
+            const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
             all = [...all, ...items];
         }
 
         // Dynamic
         for (const storeName of Object.keys(this.dynamicStores)) {
             if (Object.keys(CONTAINERS).includes(storeName)) continue;
-            const items = await this.getAllItems(storeName);
+            const itemsResult = await this.getAllItems(storeName);
+            const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.items;
             all = [...all, ...items];
         }
 
