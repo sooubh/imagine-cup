@@ -114,7 +114,8 @@ export async function getStoreItemsAction(section: string): Promise<StockItem[]>
         if (!section) return [];
         const decodedSection = decodeURIComponent(section);
         const items = await azureService.getAllItems(decodedSection);
-        return items;
+        // Explicitly cast to StockItem[] to avoid type ambiguity
+        return items as StockItem[];
     } catch (e) {
         console.error("getStoreItemsAction failed:", e);
         return [];

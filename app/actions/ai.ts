@@ -1,7 +1,7 @@
 'use server';
 
 import { azureAIService } from '@/services/AzureAIService';
-import { azureService } from '@/lib/azureDefaults';
+import { azureService, StockItem } from '@/lib/azureDefaults';
 import { getInventoryContext } from '@/lib/aiContext';
 
 import { cookies } from 'next/headers';
@@ -21,7 +21,7 @@ export async function chatWithDataAction(userMessage: string) {
         }
 
         // Fetch scoped data
-        const items = await azureService.getAllItems(section);
+        const items = await azureService.getAllItems(section) as StockItem[];
         const activities = await azureService.getRecentActivities(section);
 
         const context = getInventoryContext(items, activities);
@@ -43,7 +43,7 @@ export async function getDashboardInsightAction() {
         const section = user?.section || 'Hospital';
 
         // Fetch fresh data
-        const items = await azureService.getAllItems(section);
+        const items = await azureService.getAllItems(section) as StockItem[];
         // We only need items for the summary, but activities help context
         const context = getInventoryContext(items, []);
 
