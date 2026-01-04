@@ -1,6 +1,6 @@
-# 🔌 StockHealth AI - API Reference
+# 🔌 LedgerShield - API Reference
 
-Complete API documentation for developers integrating with StockHealth AI.
+Complete API documentation for developers integrating with LedgerShield.
 
 ---
 
@@ -1139,6 +1139,6 @@ fetch('/api/items', {
 
 ---
 
-**For questions or support, contact: api-support@stockhealth.ai**
+**For questions or support, contact: api-support@LedgerShield.ai**
 
 *Last Updated: January 4, 2026*

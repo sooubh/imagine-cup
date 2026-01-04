@@ -1,4 +1,4 @@
-# 🛡️ StockHealth AI
+# 🛡️ LedgerShield
 
 > **AI-Powered Inventory and Supply-Chain Intelligence Platform**  
 > Transforming Critical Infrastructure Sectors through Intelligent Inventory Management
@@ -23,11 +23,11 @@ Critical infrastructure sectors—**Food Distribution Centers**, **Hospital Netw
 
 ---
 
-## 💡 Our Solution: StockHealth AI
+## 💡 Our Solution: LedgerShield
 
-**StockHealth AI** is an AI-powered inventory and supply-chain intelligence platform that transforms traditional inventory management into a **proactive, data-driven, and intelligent system**.
+**LedgerShield** is an AI-powered inventory and supply-chain intelligence platform that transforms traditional inventory management into a **proactive, data-driven, and intelligent system**.
 
-### Why StockHealth AI?
+### Why LedgerShield?
 
 ✅ **Real-Time Inventory Tracking** - Live stock levels across all locations  
 ✅ **Integrated Sales & Usage** - Instant transaction recording and analysis  
@@ -150,8 +150,8 @@ Bot: ✅ Purchase order PO-2024-0042 created
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/stockhealth-ai.git
-cd stockhealth-ai
+git clone https://github.com/your-username/LedgerShield-ai.git
+cd LedgerShield-ai
 
 # 2. Install dependencies
 npm install
@@ -248,7 +248,7 @@ npm run dev
 
 ## 📈 Impact
 
-### Before StockHealth AI
+### Before LedgerShield
 ❌ 30-40% wastage due to expiry  
 ❌ 20-25% stock-outs  
 ❌ Manual tracking and reconciliation  
@@ -256,7 +256,7 @@ npm run dev
 ❌ No real-time visibility  
 ❌ 3-5 day response time  
 
-### After StockHealth AI
+### After LedgerShield
 ✅ **10-15% wastage** (60% reduction)  
 ✅ **5% stock-outs** (75% reduction)  
 ✅ **Real-time automated tracking**  
@@ -310,7 +310,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ## 👥 Team
 
-**StockHealth AI** is proudly built by **Team StockHealth** for Microsoft Imagine Cup 2025:
+**LedgerShield** is proudly built by **Team LedgerShield** for Microsoft Imagine Cup 2025:
 
 ### Core Team
 
@@ -325,10 +325,10 @@ Database Design, API Development, Data Modeling, Analytics
 
 ### Contact
 
-- 📧 Email: team@stockhealth.ai
-- 🌐 Website: [stockhealth.ai](https://stockhealth.ai)
-- 💼 LinkedIn: [StockHealth AI](https://linkedin.com/company/stockhealth-ai)
-- 🐦 Twitter: [@StockHealthAI](https://twitter.com/stockhealthai)
+- 📧 Email: team@LedgerShield.ai
+- 🌐 Website: [LedgerShield.ai](https://LedgerShield.ai)
+- 💼 LinkedIn: [LedgerShield](https://linkedin.com/company/LedgerShield-ai)
+- 🐦 Twitter: [@LedgerShieldAI](https://twitter.com/LedgerShieldai)
 
 ---
 
@@ -371,7 +371,7 @@ Database Design, API Development, Data Modeling, Analytics
 This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE) file for details.
 
 ```
-Copyright (c) 2025 Team StockHealth
+Copyright (c) 2025 Team LedgerShield
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -410,14 +410,14 @@ copies of the Software...
 - 📖 **Documentation**: Read [DOCUMENTATION.md](./DOCUMENTATION.md)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/your-repo/issues)
-- 📧 **Email**: support@stockhealth.ai
+- 📧 **Email**: support@LedgerShield.ai
 
 ### Stay Connected
 
-- 🌐 Website: [stockhealth.ai](https://stockhealth.ai)
-- 📱 Twitter: [@StockHealthAI](https://twitter.com/stockhealthai)
-- 💼 LinkedIn: [StockHealth AI](https://linkedin.com/company/stockhealth-ai)
-- 📹 YouTube: [Demo Videos](https://youtube.com/@stockhealthai)
+- 🌐 Website: [LedgerShield.ai](https://LedgerShield.ai)
+- 📱 Twitter: [@LedgerShieldAI](https://twitter.com/LedgerShieldai)
+- 💼 LinkedIn: [LedgerShield](https://linkedin.com/company/LedgerShield-ai)
+- 📹 YouTube: [Demo Videos](https://youtube.com/@LedgerShieldai)
 
 ---
 
@@ -425,7 +425,7 @@ copies of the Software...
 
 If you find this project helpful, please consider giving it a star! ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=your-username/stockhealth-ai&type=Date)](https://star-history.com/#your-username/stockhealth-ai&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=your-username/LedgerShield-ai&type=Date)](https://star-history.com/#your-username/LedgerShield-ai&Date)
 
 ---
 
@@ -433,9 +433,9 @@ If you find this project helpful, please consider giving it a star! ⭐
 
 **Making supply chains transparent, efficient, and reliable for everyone.** 🛡️
 
-Built with ❤️ by Team StockHealth for Microsoft Imagine Cup 2025
+Built with ❤️ by Team LedgerShield for Microsoft Imagine Cup 2025
 
-[Website](https://stockhealth.ai) • [Documentation](./DOCUMENTATION.md) • [API Reference](./API_REFERENCE.md) • [Architecture](./ARCHITECTURE.md)
+[Website](https://LedgerShield.ai) • [Documentation](./DOCUMENTATION.md) • [API Reference](./API_REFERENCE.md) • [Architecture](./ARCHITECTURE.md)
 
 </div>
 

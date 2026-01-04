@@ -1,4 +1,4 @@
-# 🏗️ StockHealth AI - System Architecture
+# 🏗️ LedgerShield - System Architecture
 
 Detailed technical architecture and design documentation.
 
@@ -21,7 +21,7 @@ Detailed technical architecture and design documentation.
 
 ## Architecture Overview
 
-StockHealth AI follows a **modern, serverless, microservices-inspired architecture** optimized for cloud deployment.
+LedgerShield follows a **modern, serverless, microservices-inspired architecture** optimized for cloud deployment.
 
 ### High-Level Architecture
 
@@ -939,6 +939,6 @@ const txn = new TransactionBuilder()
 
 ---
 
-**For architecture questions, contact: architects@stockhealth.ai**
+**For architecture questions, contact: architects@LedgerShield.ai**
 
 *Last Updated: January 4, 2026*

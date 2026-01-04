@@ -112,7 +112,7 @@ export function ExportOptions() {
 
         // Add Summary
         doc.setFontSize(18);
-        doc.text('StockHealth AI - Inventory Report', 14, 22);
+        doc.text('LedgerShield - Inventory Report', 14, 22);
 
         doc.setFontSize(11);
         doc.setTextColor(100);

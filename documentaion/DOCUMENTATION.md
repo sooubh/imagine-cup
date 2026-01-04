@@ -1,4 +1,4 @@
-# 📚 StockHealth AI - Complete Documentation
+# 📚 LedgerShield - Complete Documentation
 
 > **AI-Powered Inventory and Supply-Chain Intelligence Platform**  
 > Transforming Critical Infrastructure Sectors through Intelligent Inventory Management
@@ -28,7 +28,7 @@
 
 ## 🎯 Project Overview
 
-**StockHealth AI** is an advanced AI-powered inventory and supply-chain intelligence platform designed specifically for critical infrastructure sectors including:
+**LedgerShield** is an advanced AI-powered inventory and supply-chain intelligence platform designed specifically for critical infrastructure sectors including:
 
 - 🏪 **Food Distribution Centers (FDC)** - Managing food supplies for public distribution systems
 - 🏥 **Hospital Networks** - Tracking medicines, medical equipment, and critical supplies
@@ -69,7 +69,7 @@ Critical infrastructure sectors face significant inventory management challenges
 
 ## 💡 Our Solution
 
-StockHealth AI provides a **unified, intelligent platform** that brings together all inventory data and provides AI-powered insights for proactive decision-making.
+LedgerShield provides a **unified, intelligent platform** that brings together all inventory data and provides AI-powered insights for proactive decision-making.
 
 ### Core Capabilities
 
@@ -358,8 +358,8 @@ export function getInventoryContext(
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/your-username/stockhealth-ai.git
-cd stockhealth-ai
+git clone https://github.com/your-username/LedgerShield-ai.git
+cd LedgerShield-ai
 ```
 
 ### Step 2: Install Dependencies
@@ -391,7 +391,7 @@ AZURE_COSMOS_KEY=your-primary-key-here
 OPENAI_API_KEY=sk-your-api-key-here
 
 # Application Configuration
-NEXT_PUBLIC_APP_NAME=StockHealth AI
+NEXT_PUBLIC_APP_NAME=LedgerShield
 NEXT_PUBLIC_APP_VERSION=1.0.0
 ```
 
@@ -949,7 +949,7 @@ LedgerBot receives:
 #### 2. **System Prompt**
 
 ```
-You are LedgerBot (StockHealth AI), an advanced inventory & analytics assistant.
+You are LedgerBot (LedgerShield), an advanced inventory & analytics assistant.
 
 Core Behaviors:
 - NO GREETINGS: Start immediately with data
@@ -1122,12 +1122,12 @@ graph TD
 
 1. **Create App Service**
    ```bash
-   az webapp create --resource-group StockHealthRG --plan StockHealthPlan --name stockhealth-ai --runtime "NODE:18-lts"
+   az webapp create --resource-group LedgerShieldRG --plan LedgerShieldPlan --name LedgerShield-ai --runtime "NODE:18-lts"
    ```
 
 2. **Configure Environment**
    ```bash
-   az webapp config appsettings set --name stockhealth-ai --resource-group StockHealthRG --settings AZURE_COSMOS_ENDPOINT=... AZURE_COSMOS_KEY=... OPENAI_API_KEY=...
+   az webapp config appsettings set --name LedgerShield-ai --resource-group LedgerShieldRG --settings AZURE_COSMOS_ENDPOINT=... AZURE_COSMOS_KEY=... OPENAI_API_KEY=...
    ```
 
 3. **Deploy via GitHub Actions**
@@ -1162,8 +1162,8 @@ We welcome contributions from the community!
 
 1. **Fork the Repository**
    ```bash
-   git clone https://github.com/your-username/stockhealth-ai.git
-   cd stockhealth-ai
+   git clone https://github.com/your-username/LedgerShield-ai.git
+   cd LedgerShield-ai
    git checkout -b feature/your-feature-name
    ```
 
@@ -1225,7 +1225,7 @@ We welcome contributions from the community!
 
 ## 👥 Team
 
-**StockHealth AI** is proudly built by **Team StockHealth** for Microsoft Imagine Cup 2025:
+**LedgerShield** is proudly built by **Team LedgerShield** for Microsoft Imagine Cup 2025:
 
 ### Core Team
 
@@ -1252,9 +1252,9 @@ We welcome contributions from the community!
 
 ### Contact
 
-- 📧 Email: team@stockhealth.ai
-- 🌐 Website: [stockhealth.ai](https://stockhealth.ai)
-- 💼 LinkedIn: [StockHealth AI](https://linkedin.com/company/stockhealth-ai)
+- 📧 Email: team@LedgerShield.ai
+- 🌐 Website: [LedgerShield.ai](https://LedgerShield.ai)
+- 💼 LinkedIn: [LedgerShield](https://linkedin.com/company/LedgerShield-ai)
 
 ---
 
@@ -1265,7 +1265,7 @@ This project is licensed under the **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2025 Team StockHealth
+Copyright (c) 2025 Team LedgerShield
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1321,7 +1321,7 @@ Built for **Microsoft Imagine Cup 2025** to address real-world supply chain chal
 - 📖 **Documentation**: Read this guide thoroughly
 - 💬 **Discussions**: GitHub Discussions for Q&A
 - 🐛 **Issues**: GitHub Issues for bug reports
-- 📧 **Email**: support@stockhealth.ai
+- 📧 **Email**: support@LedgerShield.ai
 
 ### Reporting Bugs
 

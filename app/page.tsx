@@ -176,7 +176,7 @@ export default function LoginPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
           >
-            {"StockHealth AI".split("").map((char, index) => (
+            {"LedgerShield".split("").map((char, index) => (
               <motion.span
                 key={index}
                 initial={{ opacity: 0, y: 50 }}
@@ -339,7 +339,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-center text-gray-500 text-xs font-medium">
-            © 2025 StockHealth AI • Imagine Cup Prototype
+            © 2025 LedgerShield • Imagine Cup Prototype
           </p>
         </motion.div>
       </div>
