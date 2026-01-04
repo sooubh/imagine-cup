@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Filter, Tag, X, Loader2 } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Filter, Tag, X, Loader2, ScanBarcode, Camera } from 'lucide-react';
 import { StockItem, Transaction, SystemStore } from '@/lib/azureDefaults';
+
 import InvoiceModal from '@/components/InvoiceModal';
+import InlineScanner from '@/components/InlineScanner';
 import { useToast } from '@/app/context/ToastContext';
 import { getUser, UserProfile } from '@/lib/auth';
 import { getStoresAction } from '@/app/actions/admin';
@@ -26,7 +28,7 @@ export default function SalesPage() {
     const [latestTransaction, setLatestTransaction] = useState<Transaction | null>(null);
     const [showInvoice, setShowInvoice] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
-    
+
     // Store selection for admins
     const [availableStores, setAvailableStores] = useState<SystemStore[]>([]);
     const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
@@ -36,6 +38,58 @@ export default function SalesPage() {
     // Resizable Layout State
     const [leftPanelWidth, setLeftPanelWidth] = useState(66.66); // Percentage
     const [isResizing, setIsResizing] = useState(false);
+
+    // Barcode Scanner State
+    const [barcodeInput, setBarcodeInput] = useState('');
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const barcodeInputRef = React.useRef<HTMLInputElement>(null);
+
+    // Camera Scan Handler
+    const handleCameraScan = (decodedText: string) => {
+        const scannedId = decodedText.trim();
+        // Reuse the logic (refactor if needed, but for now duplicate the check to ensure access to latest inventory state)
+        // Actually, let's keep it simple: just set the input and call the same logic? 
+        // No, directly add to cart is better for "Speed"
+
+        const item = inventory.find(i => i.id === scannedId);
+        if (item) {
+            if (item.quantity > 0) {
+                addToCart(item);
+                toast.success('Camera Scan', `${item.name} added`);
+            } else {
+                toast.error('Out of Stock', `${item.name} is unavailable`);
+            }
+        } else {
+            // Maybe it's not an ID, maybe try fuzzy name match?
+            // For now strictly ID as requested.
+            toast.error('Not Found', `Item ID "${scannedId}" not found`);
+        }
+    };
+
+    // Scan Handler (Manual)
+    const handleBarcodeScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            const scannedId = barcodeInput.trim();
+            if (!scannedId) return;
+
+            // Exact match on ID (Barcode)
+            const item = inventory.find(i => i.id === scannedId);
+
+            if (item) {
+                if (item.quantity > 0) {
+                    addToCart(item);
+                    setBarcodeInput(''); // Clear for next scan
+                    toast.success('Scanned', `${item.name} added`);
+                } else {
+                    toast.error('Out of Stock', `${item.name} is unavailable`);
+                    setBarcodeInput('');
+                }
+            } else {
+                toast.error('Not Found', `Item ID "${scannedId}" not found`);
+                setBarcodeInput('');
+            }
+        }
+    };
 
     // Drag Handlers
     const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
@@ -74,7 +128,7 @@ export default function SalesPage() {
             if (parts.length === 2) return parts.pop()?.split(';').shift();
             return null;
         };
-        
+
         const userId = getCookie('simulated_user_id');
         if (userId) {
             const userProfile = getUser(userId);
@@ -87,27 +141,27 @@ export default function SalesPage() {
             }
         }
     }, []);
-    
+
     // Load stores for section - Include admin + retailers
     useEffect(() => {
         if (user) {
             console.log(`🏪 POS: Loading stores for section ${user.section}`);
             // Get admin + all retailers in this section
             const { SIMULATED_USERS } = require('@/lib/auth');
-            const sectionUsers = SIMULATED_USERS.filter((u: any) => 
+            const sectionUsers = SIMULATED_USERS.filter((u: any) =>
                 u.section === user.section && (u.role === 'admin' || u.role === 'retailer')
             );
             console.log(`✅ POS: Found ${sectionUsers.length} users (admin + retailers)`);
-            
+
             // Convert users to store format for dropdown
             const storesAsUsers = sectionUsers.map((u: any) => ({
                 id: u.id,
                 name: u.name,
                 section: u.section
             }));
-            
+
             setAvailableStores(storesAsUsers);
-            
+
             // Auto-select first store for admins if none selected
             if (user.role === 'admin' && !selectedStoreId && storesAsUsers.length > 0) {
                 setSelectedStoreId(storesAsUsers[0].id);
@@ -127,16 +181,16 @@ export default function SalesPage() {
 
     const fetchInventory = async () => {
         if (!user || !selectedStoreId) return;
-        
+
         setIsLoading(true);
         try {
             console.log(`📦 POS: Fetching inventory for section ${user.section}, store ${selectedStoreId}`);
             // Fetch items from user's section only
             const res = await fetch(`/api/items?section=${user.section}`);
             const data = await res.json();
-            
+
             console.log(`📥 POS: Received ${Array.isArray(data) ? data.length : 0} items from API`);
-            
+
             if (Array.isArray(data)) {
                 // Filter by selected store's ownerId
                 const filteredData = data.filter(item => item.ownerId === selectedStoreId);
@@ -159,7 +213,7 @@ export default function SalesPage() {
 
             itemsToAdd.forEach((reqItem: any) => {
                 // Fuzzy match name
-                const matchedItem = inventory.find(inv => 
+                const matchedItem = inventory.find(inv =>
                     inv.name.toLowerCase().includes(reqItem.itemName.toLowerCase())
                 );
 
@@ -167,7 +221,7 @@ export default function SalesPage() {
                     setCart(prev => {
                         const existing = prev.find(c => c.item.id === matchedItem.id);
                         if (existing) {
-                             return prev.map(c => c.item.id === matchedItem.id ? { ...c, quantity: c.quantity + reqItem.quantity } : c);
+                            return prev.map(c => c.item.id === matchedItem.id ? { ...c, quantity: c.quantity + reqItem.quantity } : c);
                         }
                         return [...prev, { item: matchedItem, quantity: reqItem.quantity }];
                     });
@@ -191,9 +245,9 @@ export default function SalesPage() {
             const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.category.toLowerCase().includes(searchTerm.toLowerCase());
-            
+
             const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-            
+
             return matchesSearch && matchesCategory;
         });
     }, [inventory, searchTerm, selectedCategory]);
@@ -227,7 +281,7 @@ export default function SalesPage() {
             return c;
         }));
     };
-    
+
     const setManualQuantity = (itemId: string, value: string) => {
         const qty = parseInt(value) || 0;
         setCart(prev => prev.map(c => {
@@ -264,7 +318,7 @@ export default function SalesPage() {
             customerName: "Walk-in",
             operatorId: "System"
         };
-        
+
         try {
             const res = await fetch('/api/items/sell', {
                 method: 'POST',
@@ -272,11 +326,11 @@ export default function SalesPage() {
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            
+
             if (res.ok) {
                 // Success!
                 toast.success('Transaction Successful!', `Invoice: ${data.invoiceNumber}`);
-                
+
                 // Dispatch event for notifications
                 window.dispatchEvent(new CustomEvent('sale-completed', {
                     detail: {
@@ -284,11 +338,11 @@ export default function SalesPage() {
                         totalAmount: data.totalAmount
                     }
                 }));
-                
+
                 setLatestTransaction(data);
                 setShowInvoice(true);
                 setCart([]);
-                
+
                 // Refresh inventory
                 await fetchInventory();
             } else {
@@ -306,28 +360,28 @@ export default function SalesPage() {
 
     return (
         <div className="flex flex-col md:flex-row h-[calc(100vh-6rem)] bg-background-light dark:bg-black font-sans overflow-hidden rounded-3xl relative z-0">
-            
+
             {/* Mobile Header Cart Toggle (Visible only on mobile) */}
             <div className="md:hidden fixed bottom-6 right-6 z-50">
-                <button 
+                <button
                     onClick={() => setShowMobileCart(true)}
                     className="relative flex items-center justify-center size-14 rounded-full bg-primary text-black shadow-xl hover:scale-105 active:scale-95 transition-all"
                 >
                     <ShoppingCart className="w-6 h-6" />
                     {cart.length > 0 && (
                         <span className="absolute -top-1 -right-1 size-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center border-2 border-white dark:border-black">
-                            {cart.reduce((a,c) => a+c.quantity, 0)}
+                            {cart.reduce((a, c) => a + c.quantity, 0)}
                         </span>
                     )}
                 </button>
             </div>
 
             {/* Main Content Area */}
-            <div 
+            <div
                 className={`flex flex-col h-full transition-all duration-300 md:duration-0 ${showMobileCart ? 'hidden md:flex' : 'flex'}`}
                 style={{ width: `${leftPanelWidth}%` }} // Dynamic Width
             >
-                
+
                 {/* Left: Product Catalog */}
                 <div className="w-full p-2 md:p-3 flex flex-col h-full overflow-hidden">
                     {/* Header Section */}
@@ -344,12 +398,12 @@ export default function SalesPage() {
                                     Browse and add items to cart
                                 </p>
                             </div>
-                            
+
                             {/* Store Selector for Admins */}
                             {user?.role === 'admin' && availableStores.length > 0 && (
                                 <div className="space-y-1">
                                     <label className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider ml-1">Selling From</label>
-                                    <select 
+                                    <select
                                         value={selectedStoreId || ''}
                                         onChange={(e) => setSelectedStoreId(e.target.value)}
                                         className="appearance-none bg-white dark:bg-neutral-800 rounded-lg px-3 py-2 text-xs font-semibold border-none ring-1 ring-neutral-200 dark:ring-neutral-800 text-neutral-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -366,10 +420,10 @@ export default function SalesPage() {
                                     <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mt-0.5">{user.name}</p>
                                 </div>
                             )}
-                            
+
                             <div className="relative group w-full lg:w-auto">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4 group-focus-within:text-primary transition-colors" />
-                                <input 
+                                <input
                                     type="text"
                                     placeholder="Search..."
                                     className="w-full lg:w-64 bg-white dark:bg-[#1f1e0b] rounded-xl pl-9 pr-9 py-2 border-none ring-1 ring-neutral-200 dark:ring-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
@@ -387,9 +441,41 @@ export default function SalesPage() {
                             </div>
                         </div>
 
+                        {/* Barcode Scanner Input */}
+                        <div className="flex items-center gap-2 mb-3 bg-white dark:bg-[#1f1e0b] p-2 rounded-xl border-2 border-dashed border-primary/30 mx-1">
+                            <ScanBarcode className="text-primary w-5 h-5 animate-pulse" />
+                            <input
+                                ref={barcodeInputRef}
+                                type="text"
+                                placeholder="Scan Barcode / Product ID here..."
+                                className="flex-1 bg-transparent border-none focus:outline-none text-sm font-mono font-bold placeholder:font-sans placeholder:font-normal"
+                                value={barcodeInput}
+                                onChange={(e) => setBarcodeInput(e.target.value)}
+                                onKeyDown={handleBarcodeScan}
+                                autoFocus
+                            />
+                            <button
+                                onClick={() => {
+                                    setBarcodeInput('');
+                                    barcodeInputRef.current?.focus();
+                                }}
+                                className="text-xs font-bold text-primary hover:text-primary/80 uppercase px-2"
+                            >
+                                Clear
+                            </button>
+                            <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-800 mx-1"></div>
+                            <button
+                                onClick={() => setIsScannerOpen(true)}
+                                className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500 hover:text-primary transition-colors"
+                                title="Open Camera Scanner"
+                            >
+                                <Camera className="w-5 h-5" />
+                            </button>
+                        </div>
+
                         {/* Category Filter Tabs */}
                         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
-                             {/* ... (Keep existing category tabs logic, just ensure spacing is good) ... */}
+                            {/* ... (Keep existing category tabs logic, just ensure spacing is good) ... */}
                             <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-wider shrink-0">
                                 <Filter className="w-3.5 h-3.5" />
                             </div>
@@ -397,11 +483,10 @@ export default function SalesPage() {
                                 <button
                                     key={category}
                                     onClick={() => setSelectedCategory(category)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-                                        selectedCategory === category
-                                            ? 'bg-primary text-black shadow-sm'
-                                            : 'bg-white dark:bg-[#1f1e0b] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 ${selectedCategory === category
+                                        ? 'bg-primary text-black shadow-sm'
+                                        : 'bg-white dark:bg-[#1f1e0b] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                                        }`}
                                 >
                                     {category}
                                 </button>
@@ -411,7 +496,15 @@ export default function SalesPage() {
 
                     {/* Product Grid - Adjusted for 3 columns on PC */}
                     <div className="flex-1 overflow-y-auto -mr-2 pr-2">
-                         {isLoading ? (
+                        {/* Inline Scanner Area */}
+                        {isScannerOpen && (
+                            <InlineScanner
+                                onClose={() => setIsScannerOpen(false)}
+                                onScanSuccess={handleCameraScan}
+                            />
+                        )}
+
+                        {isLoading ? (
                             <div className="h-full flex flex-col items-center justify-center text-neutral-400">
                                 <span className="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
                                 <p className="font-semibold text-sm mt-2">Loading...</p>
@@ -427,21 +520,20 @@ export default function SalesPage() {
                         ) : (
                             <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 pb-20 md:pb-2`}>
                                 {filteredInventory.map(item => (
-                                    <div 
-                                        key={item.id} 
+                                    <div
+                                        key={item.id}
                                         onClick={() => item.quantity > 0 && addToCart(item)}
-                                        className={`group bg-white dark:bg-[#1f1e0b] p-3 rounded-xl cursor-pointer transition-all flex flex-col justify-between h-44 shadow-sm hover:shadow-md ${
-                                            item.quantity > 0
-                                                ? 'hover:bg-neutral-50 dark:hover:bg-neutral-900/50'
-                                                : 'opacity-50 grayscale cursor-not-allowed'
-                                        }`}
+                                        className={`group bg-white dark:bg-[#1f1e0b] p-3 rounded-xl cursor-pointer transition-all flex flex-col justify-between h-44 shadow-sm hover:shadow-md ${item.quantity > 0
+                                            ? 'hover:bg-neutral-50 dark:hover:bg-neutral-900/50'
+                                            : 'opacity-50 grayscale cursor-not-allowed'
+                                            }`}
                                     >
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between items-start">
                                                 <span className="inline-flex items-center justify-center size-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 group-hover:bg-primary group-hover:text-black transition-colors">
                                                     <span className="material-symbols-outlined text-lg">
-                                                        {item.category.includes('Med') ? 'pill' : 
-                                                         item.category.includes('Equip') ? 'medical_services' : 'inventory_2'}
+                                                        {item.category.includes('Med') ? 'pill' :
+                                                            item.category.includes('Equip') ? 'medical_services' : 'inventory_2'}
                                                     </span>
                                                 </span>
                                                 {item.quantity <= 0 ? (
@@ -449,11 +541,10 @@ export default function SalesPage() {
                                                         Out
                                                     </span>
                                                 ) : (
-                                                    <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${
-                                                        item.quantity < 10 
-                                                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' 
+                                                    <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${item.quantity < 10
+                                                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
                                                         : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                    }`}>
+                                                        }`}>
                                                         {item.quantity} Left
                                                     </span>
                                                 )}
@@ -475,9 +566,9 @@ export default function SalesPage() {
                                                 </p>
                                             </div>
                                             <div className="group-hover:translate-x-1 transition-transform">
-                                                 <span className="size-6 flex items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
+                                                <span className="size-6 flex items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
                                                     <Plus className="w-3 h-3" />
-                                                 </span>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -497,7 +588,7 @@ export default function SalesPage() {
             </div>
 
             {/* Right: Cart & Checkout Panel (Responsive Logic) */}
-            <div 
+            <div
                 className={`
                     bg-white dark:bg-[#1f1e0b] flex flex-col shadow-xl z-20 
                     absolute md:static inset-0 transition-transform duration-300 ease-in-out
@@ -509,7 +600,7 @@ export default function SalesPage() {
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             {/* Mobile Back Button */}
-                            <button 
+                            <button
                                 onClick={() => setShowMobileCart(false)}
                                 className="md:hidden flex items-center justify-center size-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
                             >
@@ -520,16 +611,16 @@ export default function SalesPage() {
                             </h2>
                         </div>
                         <span className="px-2 py-1 rounded-full bg-white dark:bg-neutral-800 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 shadow-sm">
-                            {cart.reduce((a,c) => a+c.quantity, 0)} Items
+                            {cart.reduce((a, c) => a + c.quantity, 0)} Items
                         </span>
                     </div>
-                    
+
                     {/* Transaction Controls (Compact) */}
                     <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                             <label className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider ml-1">Type</label>
                             <div className="relative">
-                                <select 
+                                <select
                                     value={transactionType}
                                     onChange={(e) => setTransactionType(e.target.value)}
                                     className="w-full appearance-none bg-white dark:bg-neutral-800 rounded-lg px-2 py-1.5 text-xs font-semibold border-none ring-1 ring-neutral-200 dark:ring-neutral-800 text-neutral-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -543,7 +634,7 @@ export default function SalesPage() {
                         <div className="space-y-1">
                             <label className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider ml-1">Payment</label>
                             <div className="relative">
-                                <select 
+                                <select
                                     value={paymentMethod}
                                     onChange={(e) => setPaymentMethod(e.target.value)}
                                     className="w-full appearance-none bg-white dark:bg-neutral-800 rounded-lg px-2 py-1.5 text-xs font-semibold border-none ring-1 ring-neutral-200 dark:ring-neutral-800 text-neutral-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -570,8 +661,8 @@ export default function SalesPage() {
                         cart.map(c => (
                             <div key={c.item.id} className="group bg-white dark:bg-[#23220f] p-2 rounded-xl shadow-sm flex gap-2 transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
                                 <div className="flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg p-0.5 gap-0.5">
-                                    <button 
-                                        onClick={() => updateQuantity(c.item.id, 1)} 
+                                    <button
+                                        onClick={() => updateQuantity(c.item.id, 1)}
                                         className="p-1 hover:bg-white dark:hover:bg-neutral-700 rounded-md text-neutral-500 hover:text-green-600 dark:hover:text-green-500 transition-all"
                                     >
                                         <Plus className="w-3 h-3" />
@@ -584,8 +675,8 @@ export default function SalesPage() {
                                         onChange={(e) => setManualQuantity(c.item.id, e.target.value)}
                                         className="text-xs font-mono font-bold w-8 text-center bg-transparent border-none focus:outline-none focus:bg-white dark:focus:bg-neutral-700 rounded px-0.5 text-neutral-dark dark:text-white"
                                     />
-                                    <button 
-                                        onClick={() => updateQuantity(c.item.id, -1)} 
+                                    <button
+                                        onClick={() => updateQuantity(c.item.id, -1)}
                                         className="p-1 hover:bg-white dark:hover:bg-neutral-700 rounded-md text-neutral-500 hover:text-red-500 transition-all"
                                     >
                                         <Minus className="w-3 h-3" />
@@ -604,8 +695,8 @@ export default function SalesPage() {
                                     </div>
                                 </div>
 
-                                <button 
-                                    onClick={() => removeFromCart(c.item.id)} 
+                                <button
+                                    onClick={() => removeFromCart(c.item.id)}
                                     className="self-center p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all opacity-0 group-hover:opacity-100"
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -617,7 +708,7 @@ export default function SalesPage() {
 
                 {/* Footer / Checkout */}
                 <div className="p-3 bg-white dark:bg-[#1f1e0b] pb-24 md:pb-3 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
-                     <div className="space-y-1.5 mb-3">
+                    <div className="space-y-1.5 mb-3">
                         <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
                             <span className="font-medium">Subtotal</span>
                             <span className="font-mono font-semibold">${subtotal.toFixed(2)}</span>
@@ -634,14 +725,13 @@ export default function SalesPage() {
                         </div>
                     </div>
 
-                    <button 
+                    <button
                         onClick={handleCheckout}
                         disabled={cart.length === 0 || isProcessing}
-                        className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] ${
-                            cart.length > 0 && !isProcessing
-                            ? 'bg-primary hover:bg-[#eae605] text-black shadow-lg hover:shadow-xl hover:shadow-primary/20' 
+                        className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] ${cart.length > 0 && !isProcessing
+                            ? 'bg-primary hover:bg-[#eae605] text-black shadow-lg hover:shadow-xl hover:shadow-primary/20'
                             : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
-                        }`}
+                            }`}
                     >
                         {isProcessing ? (
                             <>
@@ -657,12 +747,13 @@ export default function SalesPage() {
                     </button>
                 </div>
             </div>
-            
-            <InvoiceModal 
-                transaction={latestTransaction} 
-                isOpen={showInvoice} 
-                onClose={() => setShowInvoice(false)} 
+
+            <InvoiceModal
+                transaction={latestTransaction}
+                isOpen={showInvoice}
+                onClose={() => setShowInvoice(false)}
             />
         </div>
     );
 }
+

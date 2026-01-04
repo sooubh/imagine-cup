@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import { azureService } from '@/lib/azureDefaults';
 import { getInventoryContext, SYSTEM_PROMPT } from '@/lib/aiContext';
 import { cookies } from 'next/headers';
-import { getUser } from '@/lib/auth';
+import { getUser, SIMULATED_USERS } from '@/lib/auth';
 
 // Initialize OpenAI Client
 const openai = new OpenAI({
@@ -125,6 +125,34 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                 properties: {
                     focus: { type: "string", enum: ["all", "expiry", "critical"], description: "Focus area for analysis" }
                 }
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_store_inventory",
+            description: "Get inventory details for a specific store. Use this when the user asks about a specific store's stock (e.g., 'Stock at Central Store A').",
+            parameters: {
+                type: "object",
+                properties: {
+                    storeName: { type: "string", description: "The name of the store to check." }
+                },
+                required: ["storeName"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_sales_insights",
+            description: "Analyze sales performance or trends.",
+            parameters: {
+                type: "object",
+                properties: {
+                    metric: { type: "string", enum: ["top_selling", "recent_revenue"], description: "The metric to analyze." }
+                },
+                required: ["metric"]
             }
         }
     }
@@ -272,12 +300,46 @@ export async function chatWithLedgerBot(messages: { role: 'user' | 'bot' | 'syst
                         });
                         toolResult = `Successfully processed ${args.type} for ${transactionItems.length} items. Total: $${totalAmount}`;
                     }
-
                 } else if (fnName === "analyze_inventory_health") {
                     const critical = items.filter(i => i.quantity <= (i.minQuantity || 10));
                     const expired = items.filter(i => i.expiryDate && new Date(i.expiryDate) < new Date());
 
                     toolResult = `Analysis Results:\n- Critical Items: ${critical.length} (${critical.map(i => i.name).join(', ')})\n- Expired Items: ${expired.length}\n- Total Value: $${items.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}`;
+                } else if (fnName === "get_store_inventory") {
+                    const storeName = args.storeName.toLowerCase();
+                    const targetStore = SIMULATED_USERS.find(u => u.name.toLowerCase().includes(storeName) && u.section === section);
+
+                    if (targetStore) {
+                        const storeItems = await azureService.getItemsByStore(targetStore.id, section);
+                        const criticalCount = storeItems.filter(i => i.quantity <= (i.minQuantity || 10)).length;
+
+                        toolResult = `Inventory for **${targetStore.name}**:\n` +
+                            `- Total Items: ${storeItems.length}\n` +
+                            `- Critical Items: ${criticalCount}\n` +
+                            `- Recent Items: ${storeItems.slice(0, 5).map(i => `${i.name} (${i.quantity})`).join(', ')}`;
+                    } else {
+                        toolResult = `Error: Could not find a store named "${args.storeName}" in the ${section} section.`;
+                    }
+                } else if (fnName === "get_sales_insights") {
+                    const transactions = await azureService.getTransactions(section);
+
+                    if (args.metric === "top_selling") {
+                        const salesMap: Record<string, number> = {};
+                        transactions.forEach(t => {
+                            if (t.type === 'SALE') {
+                                t.items.forEach(i => {
+                                    salesMap[i.name] = (salesMap[i.name] || 0) + i.quantity;
+                                });
+                            }
+                        });
+                        const sorted = Object.entries(salesMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                        toolResult = `**Top Selling Items:**\n${sorted.map((([name, qty], idx) => `${idx + 1}. ${name}: ${qty} sold`)).join('\n')}`;
+                    } else if (args.metric === "recent_revenue") {
+                        const revenue = transactions
+                            .filter(t => t.type === 'SALE')
+                            .reduce((sum, t) => sum + t.totalAmount, 0);
+                        toolResult = `**Total Revenue (Recent):** ₹${revenue.toLocaleString()}`;
+                    }
                 }
                 else if (fnName === "navigate_to_page") {
                     return { reply: `Navigating to ${args.path}...`, redirectPath: args.path };
