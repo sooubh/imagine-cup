@@ -11,6 +11,8 @@ export async function PUT(
 ) {
     try {
         const { id } = await params;
+        const { searchParams } = new URL(request.url);
+        const section = searchParams.get('section');
         const body = await request.json();
 
         const cookieStore = await cookies();
@@ -21,8 +23,11 @@ export async function PUT(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Use section from URL if provided (for sub-stores), otherwise user's default section
+        const targetSection = section || user.section;
+
         // Validation: Ensure we are not wiping out essential fields if partial
-        const updatedItem = await azureService.updateItem(id, body, user.section);
+        const updatedItem = await azureService.updateItem(id, body, targetSection);
 
         if (!updatedItem) {
             return NextResponse.json({ error: 'Item not found or update failed' }, { status: 404 });
@@ -40,6 +45,8 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
+        const { searchParams } = new URL(request.url);
+        const section = searchParams.get('section');
 
         const cookieStore = await cookies();
         const userId = cookieStore.get('simulated_user_id')?.value;
@@ -49,7 +56,9 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const success = await azureService.deleteItem(id, user.section);
+        const targetSection = section || user.section;
+
+        const success = await azureService.deleteItem(id, targetSection);
 
         if (!success) {
             return NextResponse.json({ error: 'Item not found or delete failed' }, { status: 404 });

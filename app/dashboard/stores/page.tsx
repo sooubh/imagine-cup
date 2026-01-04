@@ -15,11 +15,11 @@ export default function StoresManagementPage() {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    
+
     // Form State
     const [newStoreName, setNewStoreName] = useState("");
     const [newStoreSection, setNewStoreSection] = useState("Hospital");
-    
+
     // Edit State
     const [editingStore, setEditingStore] = useState<SystemStore | null>(null);
     const [editStoreName, setEditStoreName] = useState("");
@@ -34,7 +34,7 @@ export default function StoresManagementPage() {
             if (parts.length === 2) return parts.pop()?.split(';').shift();
         }
         const userId = getCookie('simulated_user_id');
-        
+
         if (!userId) {
             router.push('/');
             return;
@@ -49,7 +49,7 @@ export default function StoresManagementPage() {
 
         // 2. Fetch Stores with Section Filter
         fetchStores(user.section);
-        
+
         // 3. Set Default Section for Add Form
         setNewStoreSection(user.section);
 
@@ -59,18 +59,18 @@ export default function StoresManagementPage() {
         setLoading(true);
         // Use provided section or fallback to currentUser's section if available
         const filterSection = section || currentUser?.section;
-        
+
         console.log('🔍 Fetching stores for section:', filterSection);
-        
+
         // Pass the section filter to ensure only stores from this section are returned
         const data = await getStoresAction(filterSection);
-        
+
         console.log('📦 Received stores:', data.length, 'stores for section:', filterSection);
-        
+
         // Fetch inventory for each store to show stats
         const storesWithInventory = await Promise.all(
             data.map(async (store) => {
-                const items = await getStoreItemsAction(store.section);
+                const items = await getStoreItemsAction(store.section, store.id); // Pass store.id for accurate count per store
                 return {
                     ...store,
                     itemCount: items.length,
@@ -79,7 +79,7 @@ export default function StoresManagementPage() {
                 };
             })
         );
-        
+
         setStores(storesWithInventory);
         setLoading(false);
     };
@@ -89,7 +89,7 @@ export default function StoresManagementPage() {
         setSubmitting(true);
         // Ensure we use the correct section (double check vs currentUser)
         const sectionToAdd = currentUser?.section || newStoreSection;
-        
+
         const res = await addStoreAction(newStoreName, sectionToAdd);
         if (res.success) {
             setIsAddModalOpen(false);
@@ -103,7 +103,7 @@ export default function StoresManagementPage() {
 
     const handleDeleteStore = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete store "${name}"? This will DELETE all stock in it.`)) return;
-        
+
         const res = await deleteStoreAction(id);
         if (res.success) {
             fetchStores();
@@ -142,7 +142,7 @@ export default function StoresManagementPage() {
                 <div>
                     <h1 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3 tracking-tight">
                         <span className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
-                           <Store className="w-8 h-8" />
+                            <Store className="w-8 h-8" />
                         </span>
                         Stores Management
                     </h1>
@@ -150,37 +150,37 @@ export default function StoresManagementPage() {
                         Manage active retailers, warehouses and inventory sections.
                     </p>
                 </div>
-                <button 
+                <button
                     className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-2"
                     onClick={() => setIsAddModalOpen(true)}
                 >
-                    <Plus size={20} strokeWidth={3} /> 
+                    <Plus size={20} strokeWidth={3} />
                     Add New Store
                 </button>
             </div>
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {[1,2,3].map(i => <div key={i} className="h-48 rounded-3xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />)}
+                    {[1, 2, 3].map(i => <div key={i} className="h-48 rounded-3xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />)}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {stores.length === 0 ? (
+                    {stores.length === 0 ? (
                         <div className="col-span-full p-12 text-center bg-white dark:bg-[#1f1e0b] rounded-3xl border-2 border-dashed border-neutral-200 dark:border-neutral-800">
                             <Store className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
                             <h3 className="text-xl font-bold text-neutral-500">No stores found</h3>
                             <p className="text-neutral-400">Create your first store to get started.</p>
                         </div>
-                     ) : stores.map((store) => (
+                    ) : stores.map((store) => (
                         <div key={store.id} className="group bg-white dark:bg-[#1f1e0b] rounded-3xl p-6 border border-transparent dark:border-neutral-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                <button 
+                                <button
                                     onClick={() => openEditModal(store)}
                                     className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-xl text-neutral-500 hover:text-indigo-600 transition-colors"
                                 >
                                     <Edit2 size={16} />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handleDeleteStore(store.id, store.name)}
                                     className="p-2 bg-red-50 dark:bg-red-900/20 rounded-xl text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                                 >
@@ -223,15 +223,15 @@ export default function StoresManagementPage() {
                                 </div>
                             </div>
 
-                            <Link 
-                                href={`/dashboard/stores/${store.name}?section=${store.section}`}
+                            <Link
+                                href={`/dashboard/stores/${store.name}?section=${store.section}&storeId=${store.id}`}
                                 className="block w-full py-3 bg-neutral-50 dark:bg-neutral-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-neutral-600 dark:text-neutral-300 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl font-bold text-sm text-center transition-colors flex items-center justify-center gap-2 group-hover:bg-indigo-600 group-hover:text-white dark:group-hover:text-white"
                             >
                                 Manage Inventory
                                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                             </Link>
                         </div>
-                     ))}
+                    ))}
                 </div>
             )}
 
@@ -248,8 +248,8 @@ export default function StoresManagementPage() {
                         <form onSubmit={handleAddStore} className="space-y-6">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Store Name</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={newStoreName}
                                     onChange={e => setNewStoreName(e.target.value)}
                                     className="w-full px-4 py-3 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white font-medium"
@@ -262,8 +262,8 @@ export default function StoresManagementPage() {
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Section / Category</label>
                                 <div className="relative">
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={newStoreSection}
                                         disabled
                                         className="w-full px-4 py-3 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none dark:text-slate-400 font-medium cursor-not-allowed opacity-70"
@@ -277,15 +277,15 @@ export default function StoresManagementPage() {
                                 </p>
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsAddModalOpen(false)}
                                     className="flex-1 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl font-bold transition-colors"
                                 >
                                     Cancel
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={submitting}
                                     className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -310,8 +310,8 @@ export default function StoresManagementPage() {
                         <form onSubmit={handleUpdateStore} className="space-y-6">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Store Name</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={editStoreName}
                                     onChange={e => setEditStoreName(e.target.value)}
                                     className="w-full px-4 py-3 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white font-medium"
@@ -321,17 +321,17 @@ export default function StoresManagementPage() {
                                     autoFocus
                                 />
                             </div>
-                            
+
                             <div className="flex gap-3 pt-2">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsEditModalOpen(false)}
                                     className="flex-1 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl font-bold transition-colors"
                                 >
                                     Cancel
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={submitting}
                                     className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >

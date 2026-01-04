@@ -1,6 +1,7 @@
 "use server";
 
 import { azureService, SystemStore, StockItem } from "@/lib/azureDefaults";
+import { SIMULATED_USERS } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 // --- STORE MANAGEMENT ---
@@ -9,22 +10,27 @@ export async function getStoresAction(sectionFilter?: string): Promise<SystemSto
     try {
         console.log('🏪 getStoresAction called with sectionFilter:', sectionFilter);
 
-        const stores = await azureService.getSystemStores();
-        console.log('📊 Total stores from database:', stores.length);
+        // Source stores from SIMULATED_USERS to ensure Owner ID alignment
+        // This ensures that "Store A" has ID "psd-r1", matching the ownerId in stock items.
+        // We include all users (including admins) as they can all hold inventory.
 
-        // Filter out main organizations (Hospital, PSD, NGO) as per user request
-        const organizationNames = ["Hospital", "PSD", "NGO"];
-        let filtered = stores.filter(store => !organizationNames.includes(store.name));
+        let targetUsers = SIMULATED_USERS;
 
-        console.log('📊 After removing org names:', filtered.length);
-
-        // Apply section filter if provided
         if (sectionFilter) {
-            filtered = filtered.filter(store => store.section === sectionFilter);
-            console.log(`📊 After filtering by section "${sectionFilter}":`, filtered.length);
+            targetUsers = targetUsers.filter(u => u.section === sectionFilter);
         }
 
-        return filtered;
+        const mappedStores: SystemStore[] = targetUsers.map(user => ({
+            id: user.id,
+            name: user.name,
+            section: user.section,
+            containerName: `Items_${user.section}`, // They share the section container, distinguished by ownerId
+            status: 'ACTIVE',
+            createdAt: new Date().toISOString()
+        }));
+
+        console.log(`✅ getStoresAction: returning ${mappedStores.length} stores from SIMULATED_USERS for section ${sectionFilter || 'all'}`);
+        return mappedStores;
     } catch (e) {
         console.error("getStoresAction failed:", e);
         return [];
@@ -109,10 +115,16 @@ export async function deleteStockItemAction(itemId: string, section: string): Pr
     }
 }
 
-export async function getStoreItemsAction(section: string): Promise<StockItem[]> {
+export async function getStoreItemsAction(section: string, ownerId?: string): Promise<StockItem[]> {
     try {
         if (!section) return [];
         const decodedSection = decodeURIComponent(section);
+
+        if (ownerId) {
+            const items = await azureService.getItemsByStore(ownerId, decodedSection);
+            return items;
+        }
+
         const items = await azureService.getAllItems(decodedSection);
         // Explicitly cast to StockItem[] to avoid type ambiguity
         return items as StockItem[];

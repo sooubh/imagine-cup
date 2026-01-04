@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReorderStats } from './ReorderStats';
 import { ReorderFilters } from './ReorderFilters';
@@ -10,6 +10,7 @@ import { ItemDetailsModal } from './ItemDetailsModal';
 import { EditItemModal } from './EditItemModal';
 import { StockItem } from '@/lib/azureDefaults';
 import { markItemsAsOrdered } from '@/app/actions/procurement';
+import { SIMULATED_USERS } from '@/lib/auth';
 
 interface ReorderPageContentProps {
     initialItems: StockItem[];
@@ -20,6 +21,14 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
     const [showFeedback, setShowFeedback] = useState(false);
     const [activeItem, setActiveItem] = useState<StockItem | null>(null);
     const [modalMode, setModalMode] = useState<'edit' | 'details' | null>(null);
+
+    // Calculate available stores from items
+    const availableStores = useMemo(() => {
+        const unique = new Set(
+            initialItems.map(item => SIMULATED_USERS.find(u => u.id === item.ownerId)?.name || 'Unknown Store')
+        );
+        return Array.from(unique).sort();
+    }, [initialItems]);
 
     // Filter Logic Client-Side (or could be server-side, but client is smoother for filters)
     // Actually, ReorderTable does filtering. We just pass raw items.
@@ -69,7 +78,7 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
         // For now, we'll just refresh the page to show any updates
         setModalMode(null);
         setActiveItem(null);
-        
+
         // Trigger a page refresh to reload data from server
         router.refresh();
     };
@@ -85,7 +94,7 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
                 </div>
             )}
             <ReorderStats items={initialItems} />
-            <ReorderFilters />
+            <ReorderFilters availableStores={availableStores} />
             <ReorderTable
                 items={initialItems}
                 selectedIds={selectedIds}

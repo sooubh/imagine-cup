@@ -1,9 +1,11 @@
-'use client';
-
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
-export function ReorderFilters() {
+interface ReorderFiltersProps {
+    availableStores: string[];
+}
+
+export function ReorderFilters({ availableStores }: ReorderFiltersProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -47,6 +49,18 @@ export function ReorderFilters() {
 
     const activeFilterCount = filters.filter(f => searchParams.get(f.key) === 'true').length;
 
+    const currentStore = searchParams.get('storeFilter') || 'All';
+
+    const handleStoreChange = (storeName: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (storeName === 'All') {
+            params.delete('storeFilter');
+        } else {
+            params.set('storeFilter', storeName);
+        }
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
     return (
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
             {/* Search Bar - Left Corner */}
@@ -61,6 +75,31 @@ export function ReorderFilters() {
                     placeholder="Search by item name or SKU..."
                     className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#23220f] border border-neutral-100 dark:border-neutral-700 rounded-2xl shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-neutral-400 text-sm"
                 />
+            </div>
+
+            {/* Store Filters - Center (or wrap) */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                <button
+                    onClick={() => handleStoreChange('All')}
+                    className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border ${currentStore === 'All'
+                        ? 'bg-primary border-primary text-black shadow-md'
+                        : 'bg-white dark:bg-[#23220f] border-neutral-100 dark:border-neutral-700 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                        }`}
+                >
+                    All Stores
+                </button>
+                {availableStores.map(store => (
+                    <button
+                        key={store}
+                        onClick={() => handleStoreChange(store)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border ${currentStore === store
+                            ? 'bg-primary border-primary text-black shadow-md'
+                            : 'bg-white dark:bg-[#23220f] border-neutral-100 dark:border-neutral-700 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                            }`}
+                    >
+                        {store}
+                    </button>
+                ))}
             </div>
 
             {/* Unified Filter Bar - Right Corner */}
