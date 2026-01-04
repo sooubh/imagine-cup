@@ -30,6 +30,16 @@ const config: Config = {
                 "gradient-conic":
                     "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
             },
+            keyframes: {
+                toastPop: {
+                    '0%': { transform: 'scale(0.8) translateX(100%)', opacity: '0' },
+                    '50%': { transform: 'scale(1.05) translateX(0)', opacity: '1' },
+                    '100%': { transform: 'scale(1) translateX(0)', opacity: '1' },
+                },
+            },
+            animation: {
+                'toast-pop': 'toastPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+            },
         },
     },
     plugins: [

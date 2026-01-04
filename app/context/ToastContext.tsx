@@ -26,7 +26,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((title: string, type: ToastType = 'info', message?: string) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(7);
-    setToasts((prev) => [...prev, { id, title, message, type }]);
+    setToasts((prev) => {
+      // Limit to maximum 2 toasts
+      const MAX_TOASTS = 2;
+      const newToast = { id, title, message, type };
+
+      // If we already have 2 toasts, remove the oldest one
+      if (prev.length >= MAX_TOASTS) {
+        return [...prev.slice(1), newToast];
+      }
+
+      return [...prev, newToast];
+    });
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -75,12 +86,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast, success, error, warning, info }}>
       {children}
       <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
-        {toasts.map((toast) => (
+        {toasts.map((toast, index) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto px-4 py-3 rounded-xl shadow-lg border flex items-start gap-3 animate-in slide-in-from-top-5 fade-in duration-300 ${getToastStyles(toast.type)}`}
+            className={`pointer-events-auto px-4 py-3 rounded-xl shadow-lg border flex items-start gap-3 
+              animate-toast-pop
+              ${getToastStyles(toast.type)}`}
+            style={{
+              animationDelay: `${index * 50}ms`,
+            }}
           >
-            <span className="material-symbols-outlined text-[20px] mt-0.5">
+            <span className="material-symbols-outlined text-[20px] mt-0.5 animate-in zoom-in duration-500">
               {getToastIcon(toast.type)}
             </span>
             <div className="flex-1 min-w-0">

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SIMULATED_USERS } from '@/lib/auth';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { exportToPDF, exportToCSV } from '@/lib/exportUtils';
 import { useSearchParams } from 'next/navigation';
 import { StockItem } from '@/lib/azureDefaults';
 import { ActionMenu } from './ActionMenu';
@@ -99,10 +98,8 @@ export function ReorderTable({ items, selectedIds, onSelectionChange, onViewItem
     };
 
     const handleExportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Reorder List", 14, 22);
-
-        const tableBody = filteredItems.map(item => [
+        const headers = ['Item', 'Category', 'Stock/Min', 'Sugg. Order', 'Section'];
+        const data = filteredItems.map(item => [
             item.name,
             item.category,
             `${item.quantity} / ${item.minQuantity || 20}`,
@@ -110,36 +107,20 @@ export function ReorderTable({ items, selectedIds, onSelectionChange, onViewItem
             item.section
         ]);
 
-        autoTable(doc, {
-            head: [['Item', 'Category', 'Stock/Min', 'Sugg. Order', 'Section']],
-            body: tableBody,
-            startY: 30,
-        });
-        doc.save('reorder_list.pdf');
+        exportToPDF("Reorder List", headers, data, 'reorder_list');
     };
 
     const handleExportCSV = () => {
-        const headers = ['Item Name', 'Category', 'Current Stock', 'Min Stock', 'Suggested Order', 'Section'];
-        const rows = filteredItems.map(item => [
-            `"${item.name}"`,
-            item.category,
-            item.quantity,
-            item.minQuantity || 20,
-            Math.max(0, (item.minQuantity || 20) * 2 - item.quantity),
-            item.section
-        ]);
+        const csvData = filteredItems.map(item => ({
+            'Item Name': item.name,
+            'Category': item.category,
+            'Current Stock': item.quantity,
+            'Min Stock': item.minQuantity || 20,
+            'Suggested Order': Math.max(0, (item.minQuantity || 20) * 2 - item.quantity),
+            'Section': item.section
+        }));
 
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(",") + "\n"
-            + rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "reorder_list.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        exportToCSV(csvData, 'reorder_list');
     };
 
     const toggleAll = () => {

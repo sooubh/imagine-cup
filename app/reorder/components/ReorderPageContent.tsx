@@ -104,7 +104,7 @@ export function ReorderPageContent({ initialItems }: ReorderPageContentProps) {
             />
             <StickyActionFooter
                 selectedCount={selectedIds.length}
-                selectedItems={initialItems.filter(item => selectedIds.includes(item.id))}
+                selectedItems={initialItems.filter(item => selectedIds.includes(`${item.id}-${item.section}`))}
                 onMarkOrdered={handleMarkOrdered}
                 onSendToProcurement={handleSendToProcurement}
             />

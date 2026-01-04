@@ -4,8 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PurchaseOrder } from '@/lib/azureDefaults';
 import { fetchItemsForProcurement, createPurchaseOrder, getPurchaseOrders, receiveOrderItems, cancelPurchaseOrder } from '@/app/actions/procurement';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { exportToPDF, exportToCSV } from '@/lib/exportUtils';
 
 // Helper to wrap search params
 function ProcurementContent() {
@@ -16,34 +15,34 @@ function ProcurementContent() {
     const [orders, setOrders] = useState<PurchaseOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
-    const [receiveModal, setReceiveModal] = useState<{order: PurchaseOrder, items: any[]} | null>(null);
+    const [receiveModal, setReceiveModal] = useState<{ order: PurchaseOrder, items: any[] } | null>(null);
 
     // Load Draft Items from URL
     useEffect(() => {
         const loadDraft = async () => {
-             const itemsParam = searchParams.get('items');
-             if (itemsParam) {
-                 const uniqueIds = Array.from(new Set(itemsParam.split(',')));
-                 
-                 try {
-                     const selected = await fetchItemsForProcurement(uniqueIds);
-                     
-                     // Transform into Order Items
-                     const orderItems = selected.map(item => ({
-                         itemId: item.id,
-                         name: item.name,
-                         currentStock: item.quantity,
-                         requestedQuantity: (item.minQuantity || 20) * 2,
-                         unit: item.unit || 'units',
-                         section: item.section,
-                         price: item.price || 0
-                     }));
-                     
-                     setDraftItems(orderItems);
-                 } catch (error) {
-                     console.error("Failed to load draft items", error);
-                 }
-             }
+            const itemsParam = searchParams.get('items');
+            if (itemsParam) {
+                const uniqueIds = Array.from(new Set(itemsParam.split(',')));
+
+                try {
+                    const selected = await fetchItemsForProcurement(uniqueIds);
+
+                    // Transform into Order Items
+                    const orderItems = selected.map(item => ({
+                        itemId: item.id,
+                        name: item.name,
+                        currentStock: item.quantity,
+                        requestedQuantity: (item.minQuantity || 20) * 2,
+                        unit: item.unit || 'units',
+                        section: item.section,
+                        price: item.price || 0
+                    }));
+
+                    setDraftItems(orderItems);
+                } catch (error) {
+                    console.error("Failed to load draft items", error);
+                }
+            }
         };
         loadDraft();
     }, [searchParams]);
@@ -65,7 +64,7 @@ function ProcurementContent() {
 
     const handlePlaceOrder = async () => {
         if (draftItems.length === 0) return;
-        
+
         const newOrder = {
             poNumber: `PO-${Date.now()}`, // Simple ID
             dateCreated: new Date().toISOString(),
@@ -100,9 +99,9 @@ function ProcurementContent() {
 
     const handleConfirmReceive = async () => {
         if (!receiveModal) return;
-        
+
         const { order, items } = receiveModal;
-        
+
         // Update order with received quantities
         const updatedOrder = {
             ...order,
@@ -111,7 +110,7 @@ function ProcurementContent() {
                 requestedQuantity: item.receivedQuantity // Use received quantity
             }))
         };
-        
+
         const success = await receiveOrderItems(updatedOrder);
         if (success) {
             // Refresh local state
@@ -125,69 +124,50 @@ function ProcurementContent() {
     };
 
     const handleCancelOrder = async (order: PurchaseOrder) => {
-        if(confirm('Are you sure you want to cancel this order?')) {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            console.log('[CANCEL] Starting cancel process for order:', order.id);
             try {
-                await cancelPurchaseOrder(order.id, order.status);
-                // Refresh local state
-                const updated = await getPurchaseOrders();
-                setOrders(updated);
+                const result = await cancelPurchaseOrder(order.id, order.tenantId || 'default');
+
+                if (result) {
+                    console.log('[CANCEL] Refreshing orders list...');
+                    const updated = await getPurchaseOrders();
+                    setOrders(updated);
+                    alert('✅ Order cancelled successfully.');
+                } else {
+                    console.error('[CANCEL] cancelPurchaseOrder returned null');
+                    alert('Failed to cancel order. The order may not exist.');
+                }
             } catch (e) {
-                console.error("Failed to cancel order", e);
-                alert("Failed to cancel order.");
+                console.error('[CANCEL] Error in handleCancelOrder:', e);
+                alert("Failed to cancel order. Please try again.");
             }
         }
     };
-    
+
     const handleExportPDF = (order: PurchaseOrder) => {
-        const doc = new jsPDF();
-        
-        doc.setFontSize(20);
-        doc.text("Purchase Order", 14, 22);
-        
-        doc.setFontSize(10);
-        doc.text(`PO Number: ${order.poNumber}`, 14, 30);
-        doc.text(`Date: ${new Date(order.dateCreated).toLocaleDateString()}`, 14, 35);
-        doc.text(`Status: ${order.status}`, 14, 40);
-        
-        const tableBody = order.items.map(item => [
+        const headers = ["Item Name", "SKU", "Qty", "Unit", "Section", "Est. Cost"];
+        const data = order.items.map(item => [
             item.name,
             item.itemId,
             item.requestedQuantity.toString(),
             item.unit,
-            item.section
+            item.section,
+            `$${(item.requestedQuantity * (item.price || 0)).toFixed(2)}`
         ]);
-
-        autoTable(doc, {
-            head: [['Item Name', 'SKU', 'Qty', 'Unit', 'Section']],
-            body: tableBody,
-            startY: 45,
-        });
-        
-        doc.save(`PO-${order.poNumber}.pdf`);
+        exportToPDF(`Purchase Order: ${order.poNumber} (${order.status})`, headers, data, `PO-${order.poNumber}`);
     };
 
     const handleExportCSV = (order: PurchaseOrder) => {
-        const headers = ['Item Name', 'SKU', 'Qty', 'Unit', 'Section', 'Est Cost'];
-        const rows = order.items.map(item => [
-            item.name,
-            item.itemId,
-            item.requestedQuantity,
-            item.unit,
-            item.section,
-            (item.requestedQuantity * (item.price || 0)).toFixed(2)
-        ]);
-
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + headers.join(",") + "\n" 
-            + rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `PO-${order.poNumber}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const data = order.items.map(item => ({
+            "Item Name": item.name,
+            "SKU": item.itemId,
+            "Qty": item.requestedQuantity,
+            "Unit": item.unit,
+            "Section": item.section,
+            "Est. Cost": (item.requestedQuantity * (item.price || 0)).toFixed(2)
+        }));
+        exportToCSV(data, `PO-${order.poNumber}`);
     };
 
     return (
@@ -219,13 +199,13 @@ function ProcurementContent() {
                 <div className="bg-white dark:bg-[#1f1e0b] rounded-3xl border border-neutral-100 dark:border-neutral-800 p-6 shadow-sm">
                     {draftItems.length === 0 ? (
                         <div className="text-center py-12 text-neutral-400">
-                             <span className="material-symbols-outlined text-4xl mb-2 block">shopping_cart_off</span>
-                             <p>No items selected for order.</p>
-                             <p className="text-sm mt-2">Go to <button onClick={() => router.push('/reorder')} className="text-primary hover:underline">Reorder Page</button> to select items.</p>
+                            <span className="material-symbols-outlined text-4xl mb-2 block">shopping_cart_off</span>
+                            <p>No items selected for order.</p>
+                            <p className="text-sm mt-2">Go to <button onClick={() => router.push('/reorder')} className="text-primary hover:underline">Reorder Page</button> to select items.</p>
                         </div>
                     ) : (
                         <div>
-                             <table className="w-full text-left mb-8">
+                            <table className="w-full text-left mb-8">
                                 <thead className="text-xs uppercase text-neutral-400 border-b border-gray-100 dark:border-neutral-800">
                                     <tr>
                                         <th className="pb-3 pl-4">Item</th>
@@ -241,8 +221,8 @@ function ProcurementContent() {
                                             <td className="py-4 pl-4 font-medium">{item.name}</td>
                                             <td className="py-4 text-neutral-500">{item.currentStock} {item.unit}</td>
                                             <td className="py-4">
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     value={item.requestedQuantity}
                                                     onChange={(e) => {
                                                         const newVal = parseInt(e.target.value) || 0;
@@ -260,17 +240,17 @@ function ProcurementContent() {
                                         </tr>
                                     ))}
                                 </tbody>
-                             </table>
-                             
-                             <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-neutral-800">
-                                 <button 
+                            </table>
+
+                            <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-neutral-800">
+                                <button
                                     onClick={handlePlaceOrder}
                                     className="px-8 py-3 bg-primary hover:bg-[#eae605] text-black font-bold rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-                                 >
-                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                     Place Order
-                                 </button>
-                             </div>
+                                >
+                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
+                                    Place Order
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -280,8 +260,8 @@ function ProcurementContent() {
             {activeTab === 'history' && (
                 <div className="space-y-4">
                     {orders.map(order => (
-                        <div 
-                            key={order.id} 
+                        <div
+                            key={order.id}
                             className="bg-white dark:bg-[#1f1e0b] rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => setSelectedOrder(order)}
                         >
@@ -289,51 +269,50 @@ function ProcurementContent() {
                                 <div>
                                     <div className="flex items-center gap-3 mb-1">
                                         <h3 className="text-lg font-bold">{order.poNumber}</h3>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                            order.status === 'RECEIVED' ? 'bg-green-100 text-green-700 border-green-200' : 
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-700 border-green-200' :
                                             order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                            order.status === 'CANCELLED' ? 'bg-red-100 text-red-700 border-red-200' :
-                                            'bg-gray-100 text-gray-700 border-gray-200'
-                                        }`}>
+                                                order.status === 'CANCELLED' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                    'bg-gray-100 text-gray-700 border-gray-200'
+                                            }`}>
                                             {order.status}
                                         </span>
                                     </div>
                                     <p className="text-sm text-neutral-500">Created {new Date(order.dateCreated).toLocaleDateString()} by {order.createdBy}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                     <button 
+                                    <button
                                         onClick={(e) => { e.stopPropagation(); handleExportPDF(order); }}
                                         className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full text-neutral-500"
                                         title="Download PDF"
-                                     >
-                                         <span className="material-symbols-outlined">picture_as_pdf</span>
-                                     </button>
-                                     <button 
+                                    >
+                                        <span className="material-symbols-outlined">picture_as_pdf</span>
+                                    </button>
+                                    <button
                                         onClick={(e) => { e.stopPropagation(); handleExportCSV(order); }}
                                         className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full text-neutral-500"
                                         title="Download CSV"
-                                     >
-                                         <span className="material-symbols-outlined">csv</span>
-                                     </button>
-                                     {order.status === 'PENDING' && (
-                                         <button 
+                                    >
+                                        <span className="material-symbols-outlined">csv</span>
+                                    </button>
+                                    {order.status === 'PENDING' && (
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); handleOpenReceiveModal(order); }}
                                             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors"
-                                         >
-                                             Mark Received
-                                         </button>
-                                     )}
-                                     {order.status === 'PENDING' && (
-                                         <button 
+                                        >
+                                            Mark Received
+                                        </button>
+                                    )}
+                                    {order.status === 'PENDING' && (
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); handleCancelOrder(order); }}
                                             className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold rounded-lg transition-colors border border-red-200"
-                                         >
-                                             Cancel
-                                         </button>
-                                     )}
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                            
+
                             <div className="bg-neutral-50 dark:bg-black/20 rounded-xl p-4">
                                 <ul className="space-y-2">
                                     {order.items.slice(0, 3).map((item, i) => (
@@ -360,7 +339,7 @@ function ProcurementContent() {
             {/* Receive Order Modal with Quantity Inputs */}
             {receiveModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setReceiveModal(null)}>
-                    <div 
+                    <div
                         className="bg-white dark:bg-[#1f1e0b] w-full max-w-3xl rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -428,13 +407,13 @@ function ProcurementContent() {
 
                         {/* Footer */}
                         <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 flex justify-end gap-2">
-                            <button 
+                            <button
                                 onClick={() => setReceiveModal(null)}
                                 className="px-6 py-3 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-300 transition-colors font-medium"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={handleConfirmReceive}
                                 className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2"
                             >
@@ -449,7 +428,7 @@ function ProcurementContent() {
             {/* Order Details Modal */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedOrder(null)}>
-                    <div 
+                    <div
                         className="bg-white dark:bg-[#1f1e0b] w-full max-w-3xl rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -473,12 +452,11 @@ function ProcurementContent() {
                         <div className="flex-1 overflow-y-auto p-6">
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between mb-4">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                                        selectedOrder.status === 'RECEIVED' ? 'bg-green-100 text-green-700 border-green-200' : 
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${selectedOrder.status === 'COMPLETED' ? 'bg-green-100 text-green-700 border-green-200' :
                                         selectedOrder.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                        selectedOrder.status === 'CANCELLED' ? 'bg-red-100 text-red-700 border-red-200' :
-                                        'bg-gray-100 text-gray-700 border-gray-200'
-                                    }`}>
+                                            selectedOrder.status === 'CANCELLED' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                'bg-gray-100 text-gray-700 border-gray-200'
+                                        }`}>
                                         {selectedOrder.status}
                                     </span>
                                     <span className="text-lg font-bold text-neutral-dark dark:text-white">
@@ -513,14 +491,14 @@ function ProcurementContent() {
 
                         {/* Footer */}
                         <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 flex justify-end gap-2">
-                            <button 
+                            <button
                                 onClick={() => handleExportPDF(selectedOrder)}
                                 className="px-4 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-300 transition-colors flex items-center gap-2"
                             >
                                 <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
                                 Export PDF
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleExportCSV(selectedOrder)}
                                 className="px-4 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-300 transition-colors flex items-center gap-2"
                             >

@@ -1,34 +1,79 @@
-export function RiskAssessmentCard() {
+'use client';
+
+import { StockItem } from '@/lib/azureDefaults';
+import { useState, useEffect } from 'react';
+import { getDashboardInsightAction } from '@/app/actions/ai';
+import { StockInsight } from '@/services/AzureAIService';
+
+interface RiskAssessmentCardProps {
+  item?: StockItem;
+}
+
+export function RiskAssessmentCard({ item }: RiskAssessmentCardProps) {
+  const [insight, setInsight] = useState<StockInsight | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRisk() {
+      if (!item) {
+        setLoading(false);
+        return;
+      }
+      try {
+        // Context specific for this item
+        const contextData = `
+            Analyze this single item for Stock-Out Risk:
+            - Name: ${item.name}
+            - Quantity: ${item.quantity} ${item.unit}
+            - Category: ${item.category}
+            - Expiry: ${item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'}
+            - Min Qty: ${item.minQuantity || 10}
+            `;
+
+        const result = await getDashboardInsightAction(contextData);
+        setInsight(result);
+      } catch (e) {
+        console.error("Risk calc failed", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRisk();
+  }, [item]);
+
+  if (loading) return <div className="h-64 bg-white dark:bg-[#1a190b] rounded-xl animate-pulse border border-neutral-100 dark:border-neutral-700"></div>;
+
+  if (!insight) return null; // Or show empty state
+
+  const isHighRisk = insight.sentiment === 'critical' || insight.sentiment === 'negative';
+
   return (
     <div className="bg-white dark:bg-[#1a190b] rounded-xl p-0 shadow-sm border border-neutral-100 dark:border-neutral-700 overflow-hidden flex flex-col h-full">
-      <div className="bg-primary/10 p-6 border-b border-primary/20">
+      <div className={`p-6 border-b ${isHighRisk ? 'bg-red-50 border-red-100 dark:bg-red-900/10 dark:border-red-900' : 'bg-primary/10 border-primary/20'}`}>
         <div className="flex items-start gap-4">
-          <div className="bg-primary text-neutral-dark rounded-full p-2 shrink-0">
+          <div className={`${isHighRisk ? 'bg-red-500 text-white' : 'bg-primary text-neutral-dark'} rounded-full p-2 shrink-0`}>
             <span className="material-symbols-outlined">analytics</span>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-neutral-dark dark:text-white leading-tight">High Risk of Stock-out</h3>
-            <p className="text-sm font-medium text-neutral-500 mt-1">Predicted in <span className="text-neutral-dark dark:text-white font-bold underline decoration-primary decoration-2">4 Days</span></p>
+            <h3 className="text-lg font-bold text-neutral-dark dark:text-white leading-tight">
+              {isHighRisk ? 'High Risk of Stock-out' : 'Stock Health Analysis'}
+            </h3>
+            <p className="text-sm font-medium text-neutral-500 mt-1">
+              AI Confidence: <span className="text-neutral-dark dark:text-white font-bold">89%</span>
+            </p>
           </div>
         </div>
       </div>
       <div className="p-6 flex flex-col gap-6 flex-1">
         {/* AI Explanation */}
         <div>
-          <p className="text-xs uppercase tracking-wider font-bold text-neutral-500 mb-3">Why this prediction?</p>
+          <p className="text-xs uppercase tracking-wider font-bold text-neutral-500 mb-3">Analysis</p>
           <ul className="flex flex-col gap-3">
             <li className="flex gap-3 text-sm leading-relaxed">
               <span className="material-symbols-outlined text-primary text-[20px] shrink-0">trending_up</span>
               <span>
-                <strong className="block text-neutral-dark dark:text-white">Usage Spike (+20%)</strong>
-                <span className="text-neutral-500">Consumption increased sharply yesterday, deviating from normal trends.</span>
-              </span>
-            </li>
-            <li className="flex gap-3 text-sm leading-relaxed">
-              <span className="material-symbols-outlined text-primary text-[20px] shrink-0">flood</span>
-              <span>
-                <strong className="block text-neutral-dark dark:text-white">Regional Event</strong>
-                <span className="text-neutral-500">Correlated with recent flood reports in the district, increasing antibiotic demand.</span>
+                <strong className="block text-neutral-dark dark:text-white">Observation</strong>
+                <span className="text-neutral-500">{insight.summary}</span>
               </span>
             </li>
           </ul>
@@ -38,19 +83,18 @@ export function RiskAssessmentCard() {
         <div>
           <p className="text-xs uppercase tracking-wider font-bold text-neutral-500 mb-3">Recommended Action</p>
           <div className="bg-background-light dark:bg-[#23220f] p-4 rounded-xl border border-neutral-100 dark:border-neutral-700">
-            <p className="text-sm font-medium mb-3 text-neutral-dark dark:text-white">Transfer stock from nearby healthy inventory.</p>
+            <p className="text-sm font-medium mb-3 text-neutral-dark dark:text-white">{insight.actionableSuggestion}</p>
             <button className="w-full py-2 px-4 bg-white dark:bg-[#1a190b] border border-neutral-200 dark:border-neutral-600 rounded-lg text-sm font-bold shadow-sm hover:border-primary transition-colors flex items-center justify-center gap-2 text-neutral-dark dark:text-white">
-              <span>Request 50 Units</span>
+              <span>Execute Action</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
-            <p className="text-[10px] text-center text-neutral-500 mt-2">Source: District Hospital (15km away)</p>
           </div>
         </div>
       </div>
       <div className="bg-primary/5 p-3 text-center border-t border-neutral-100 dark:border-neutral-700">
         <p className="text-[10px] text-neutral-500 flex items-center justify-center gap-1">
           <span className="material-symbols-outlined text-[12px]">psychology</span>
-          Generated by LedgerShield • 89% Confidence
+          Generated by LedgerShield AI
         </p>
       </div>
     </div>

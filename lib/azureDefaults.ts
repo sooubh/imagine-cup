@@ -62,7 +62,7 @@ export interface PurchaseOrder {
     id: string;
     poNumber: string;
     dateCreated: string;
-    status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED';
+    status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'COMPLETED' | 'CANCELLED';
     items: {
         itemId: string;
         name: string;
@@ -78,6 +78,7 @@ export interface PurchaseOrder {
     notes?: string;
     createdBy: string;
     approvedBy?: string;
+    tenantId: string; // Immutable partition key
 }
 
 export interface Activity {
@@ -132,7 +133,7 @@ export class AzureInventoryService {
             // Create System Containers
             await db.containers.createIfNotExists({ id: ACTIVITIES_CONTAINER, partitionKey: "/section" });
             await db.containers.createIfNotExists({ id: TRANSACTIONS_CONTAINER, partitionKey: "/section" });
-            await db.containers.createIfNotExists({ id: ORDERS_CONTAINER, partitionKey: "/status" });
+            await db.containers.createIfNotExists({ id: ORDERS_CONTAINER, partitionKey: "/tenantId" });
             await db.containers.createIfNotExists({ id: STORES_CONTAINER, partitionKey: "/section" });
 
             console.log("✅ Verified All Containers");
@@ -372,15 +373,17 @@ export class AzureInventoryService {
     }
 
     // --- ORDER MANAGEMENT ---
-    async createOrder(order: Omit<PurchaseOrder, "id">): Promise<PurchaseOrder | null> {
+    async createOrder(order: Omit<PurchaseOrder, "id" | "tenantId">, tenantId: string = "default"): Promise<PurchaseOrder | null> {
         if (!this.isConnected || !this.client) return null;
         try {
             const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
             const newOrder: PurchaseOrder = {
                 ...order,
-                id: Math.random().toString(36).substring(7)
+                id: Math.random().toString(36).substring(7),
+                tenantId  // Set immutable partition key
             };
             const { resource } = await container.items.create(newOrder);
+            console.log(`✅ Created order ${newOrder.id} for tenant ${tenantId}`);
             return resource as PurchaseOrder;
         } catch (e) {
             console.error("Failed to create purchase order:", e);
@@ -388,13 +391,18 @@ export class AzureInventoryService {
         }
     }
 
-    async getOrders(): Promise<PurchaseOrder[]> {
+    // Get orders for a specific tenant (single-partition query - efficient!)
+    async getOrders(tenantId: string = "default"): Promise<PurchaseOrder[]> {
         if (!this.isConnected || !this.client) return [];
         try {
             const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
             const { resources } = await container.items
-                .query("SELECT * FROM c ORDER BY c.dateCreated DESC")
+                .query({
+                    query: "SELECT * FROM c WHERE c.tenantId = @tenantId ORDER BY c.dateCreated DESC",
+                    parameters: [{ name: "@tenantId", value: tenantId }]
+                })
                 .fetchAll();
+
             return resources as PurchaseOrder[];
         } catch (e) {
             console.error("Failed to fetch purchase orders:", e);
@@ -402,31 +410,63 @@ export class AzureInventoryService {
         }
     }
 
-    async updateOrder(id: string, updates: Partial<PurchaseOrder>, currentStatus: string): Promise<PurchaseOrder | null> {
+    // Get all orders across all tenants (cross-partition query - admin only)
+    async getAllOrders(): Promise<PurchaseOrder[]> {
+        if (!this.isConnected || !this.client) return [];
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            const { resources } = await container.items
+                .query("SELECT * FROM c ORDER BY c.dateCreated DESC")
+                .fetchAll();
+
+            return resources as PurchaseOrder[];
+        } catch (e) {
+            console.error("Failed to fetch all purchase orders:", e);
+            return [];
+        }
+    }
+
+    // Update order - now much simpler with immutable partition key!
+    async updateOrder(id: string, updates: Partial<PurchaseOrder>, tenantId: string = "default"): Promise<PurchaseOrder | null> {
         if (!this.isConnected || !this.client) return null;
         try {
             const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
 
-            // Query to find the order
-            const { resources } = await container.items.query({
-                query: "SELECT * FROM c WHERE c.id = @id",
-                parameters: [{ name: "@id", value: id }]
-            }).fetchAll();
+            // 1. Read existing order using immutable partition key
+            const { resource: existingOrder } = await container.item(id, tenantId).read();
 
-            if (resources.length === 0) return null;
+            if (!existingOrder) {
+                console.error(`Order ${id} not found for tenant ${tenantId}`);
+                return null;
+            }
 
-            const existingOrder = resources[0];
+            // 2. Merge updates
             const updatedOrder = {
                 ...existingOrder,
-                ...updates
+                ...updates,
+                tenantId  // Ensure partition key never changes
             };
 
-            // Replace using status as partition key
-            const { resource } = await container.item(id, currentStatus).replace(updatedOrder);
+            // 3. Simple atomic replace - no delete/recreate needed!
+            const { resource } = await container.item(id, tenantId).replace(updatedOrder);
+            console.log(`✅ Updated order ${id} (status: ${updatedOrder.status})`);
             return resource as PurchaseOrder;
+
         } catch (e) {
             console.error("Failed to update purchase order:", e);
             return null;
+        }
+    }
+
+    async deleteOrder(id: string, tenantId: string = "default"): Promise<boolean> {
+        if (!this.isConnected || !this.client) return false;
+        try {
+            const container = this.client.database(DATABASE_NAME).container(ORDERS_CONTAINER);
+            await container.item(id, tenantId).delete();
+            return true;
+        } catch (e) {
+            console.error("Failed to delete purchase order:", e);
+            return false;
         }
     }
 

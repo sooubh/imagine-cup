@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Transaction } from '@/lib/azureDefaults';
@@ -13,23 +13,56 @@ interface InvoiceModalProps {
 }
 
 export default function InvoiceModal({ transaction, isOpen, onClose }: InvoiceModalProps) {
+    useEffect(() => {
+        if (isOpen) {
+            document.documentElement.classList.add('modal-open');
+        } else {
+            document.documentElement.classList.remove('modal-open');
+        }
+
+        return () => {
+            document.documentElement.classList.remove('modal-open');
+        };
+    }, [isOpen]);
+
     if (!isOpen || !transaction) return null;
 
     const generatePDF = () => {
         const doc = new jsPDF();
 
-        // Header
-        doc.setFontSize(22);
-        doc.text("INVOICE", 105, 20, { align: "center" });
-        
-        doc.setFontSize(12);
-        doc.text(`Invoice #: ${transaction.invoiceNumber}`, 20, 40);
-        doc.text(`Date: ${new Date(transaction.date).toLocaleDateString()}`, 20, 50);
-        doc.text(`Type: ${transaction.type}`, 20, 60);
+        // Header - Ledger Shield Branding
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text("LEDGER SHIELD", 105, 15, { align: "center" });
 
-        // Client Info (Mock)
-        doc.text(`Bill To: ${transaction.customerName || 'Walk-in Customer'}`, 140, 40);
-        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Medical Inventory Management System", 105, 22, { align: "center" });
+
+        // Divider
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, 26, 190, 26);
+
+        // Store Info - Left Side
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text("STORE INFORMATION", 20, 35);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Store: ${transaction.performedBy}`, 20, 42);
+        doc.text(`Store ID: ${transaction.section}`, 20, 48);
+
+        // Invoice Details - Right Side
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text("INVOICE", 140, 35);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`#${transaction.invoiceNumber}`, 140, 42);
+        doc.text(`Date: ${new Date(transaction.date).toLocaleDateString()}`, 140, 48);
+        doc.text(`Type: ${transaction.type}`, 140, 54);
+        doc.text(`Bill To: ${transaction.customerName || 'Walk-in'}`, 140, 60);
+
         // Table
         const tableColumn = ["Item", "Qty", "Price", "Subtotal"];
         const tableRows: any[] = [];
@@ -48,13 +81,13 @@ export default function InvoiceModal({ transaction, isOpen, onClose }: InvoiceMo
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: 70,
+            startY: 68,
         });
 
         // Totals
         // @ts-ignore
         const finalY = doc.lastAutoTable.finalY || 100;
-        
+
         doc.text(`Total Amount: $${transaction.totalAmount.toFixed(2)}`, 140, finalY + 20);
         doc.text(`Payment Method: ${transaction.paymentMethod}`, 20, finalY + 20);
 
@@ -71,13 +104,13 @@ export default function InvoiceModal({ transaction, isOpen, onClose }: InvoiceMo
     };
 
     const handlePrint = () => {
-         const doc = generatePDF();
-         doc.autoPrint();
-         window.open(doc.output('bloburl'), '_blank');
+        const doc = generatePDF();
+        doc.autoPrint();
+        window.open(doc.output('bloburl'), '_blank');
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
             <div className="bg-neutral-900 border border-neutral-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 {/* Header */}
                 <div className="bg-neutral-800 p-4 flex justify-between items-center border-b border-neutral-700">
@@ -92,15 +125,22 @@ export default function InvoiceModal({ transaction, isOpen, onClose }: InvoiceMo
 
                 {/* Content - Visual Preview */}
                 <div className="p-8 text-neutral-300 font-mono text-sm max-h-[60vh] overflow-y-auto">
-                    <div className="flex justify-between mb-8">
-                        <div>
-                            <h3 className="text-2xl font-bold text-white mb-1">STORE NAME</h3>
-                            <p>123 Medical Drive</p>
-                            <p>New York, NY 10001</p>
-                        </div>
-                        <div className="text-right">
-                            <p>Date: {new Date(transaction.date).toLocaleDateString()}</p>
-                            <p>Bill To: {transaction.customerName || 'Walk-in'}</p>
+                    <div className="border-b border-neutral-700 pb-6 mb-6">
+                        <h3 className="text-3xl font-bold text-primary mb-2">LEDGER SHIELD</h3>
+                        <p className="text-xs text-neutral-400 mb-4">Medical Inventory Management System</p>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className="text-neutral-500 text-xs mb-1">STORE INFORMATION</p>
+                                <p className="font-semibold text-white">{transaction.performedBy}</p>
+                                <p className="text-neutral-400 text-xs">Store ID: {transaction.section}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-neutral-500 text-xs mb-1">INVOICE DETAILS</p>
+                                <p className="font-semibold text-white">#{transaction.invoiceNumber}</p>
+                                <p className="text-neutral-400 text-xs">Date: {new Date(transaction.date).toLocaleDateString()}</p>
+                                <p className="text-neutral-400 text-xs">Bill To: {transaction.customerName || 'Walk-in'}</p>
+                            </div>
                         </div>
                     </div>
 
@@ -141,13 +181,13 @@ export default function InvoiceModal({ transaction, isOpen, onClose }: InvoiceMo
 
                 {/* Actions */}
                 <div className="p-4 bg-neutral-800 border-t border-neutral-700 flex justify-end gap-3">
-                    <button 
+                    <button
                         onClick={handlePrint}
                         className="px-4 py-2 rounded-lg bg-neutral-700 text-white hover:bg-neutral-600 transition-colors flex items-center gap-2"
                     >
                         <Printer className="w-4 h-4" /> Print
                     </button>
-                    <button 
+                    <button
                         onClick={handleDownload}
                         className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors flex items-center gap-2 font-bold"
                     >

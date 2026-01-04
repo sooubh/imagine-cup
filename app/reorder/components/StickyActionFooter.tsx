@@ -1,3 +1,5 @@
+import { exportToPDF, exportToCSV } from '@/lib/exportUtils';
+
 interface StickyActionFooterProps {
   selectedCount: number;
   selectedItems: any[]; // Selected items for export
@@ -6,43 +8,43 @@ interface StickyActionFooterProps {
 }
 
 export function StickyActionFooter({ selectedCount, selectedItems, onMarkOrdered, onSendToProcurement }: StickyActionFooterProps) {
-  
+
   const handleExportPDF = () => {
     if (selectedCount === 0) {
       alert('Please select items to export');
       return;
     }
-    
-    // Create PDF content
-    const content = selectedItems.map(item => 
-      `${item.name} - Qty: ${item.quantity} - Price: $${item.price}`
-    ).join('\n');
-    
-    alert(`📄 PDF Export\n\nSelected ${selectedCount} items:\n${content}\n\n(PDF generation would happen here)`);
+
+    const headers = ['Item Name', 'Category', 'Qty', 'Est. Price', 'Status'];
+    const data = selectedItems.map(item => [
+      item.name,
+      item.category || 'N/A',
+      item.quantity || 0,
+      `$${item.price || 0}`,
+      item.status || 'Pending'
+    ]);
+
+    exportToPDF('Reorder Request', headers, data, `reorder-request-${new Date().toISOString().split('T')[0]}`);
   };
-  
+
   const handleExportCSV = () => {
     if (selectedCount === 0) {
       alert('Please select items to export');
       return;
     }
-    
-    // Create CSV
-    const headers = 'Name,Category,Quantity,Price,Status\n';
-    const rows = selectedItems.map(item => 
-      `"${item.name}","${item.category}",${item.quantity},${item.price},"${item.status}"`
-    ).join('\n');
-    
-    const csv = headers + rows;
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reorder-items-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+
+    // Prepare data for CSV
+    const csvData = selectedItems.map(item => ({
+      'Item Name': item.name,
+      'Category': item.category || 'N/A',
+      'Quantity': item.quantity || 0,
+      'Price': `$${item.price || 0}`,
+      'Status': item.status || 'Pending'
+    }));
+
+    exportToCSV(csvData, `reorder-request-${new Date().toISOString().split('T')[0]}`);
   };
-  
+
   return (
     <div className="w-full max-w-4xl mx-auto p-4 mb-8 flex justify-center">
       <div className="bg-white dark:bg-[#23220f] text-neutral-dark dark:text-white rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between p-4 gap-4 w-full border border-neutral-100 dark:border-neutral-700">
@@ -52,18 +54,18 @@ export function StickyActionFooter({ selectedCount, selectedItems, onMarkOrdered
           </div>
           <div className="h-8 w-px bg-neutral-200 dark:bg-neutral-700 hidden sm:block"></div>
           <div className="flex items-center gap-1">
-            <button 
+            <button
               onClick={handleExportPDF}
               disabled={selectedCount === 0}
-              className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-neutral-900 dark:hover:text-white group relative disabled:opacity-50 disabled:cursor-not-allowed" 
+              className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-neutral-900 dark:hover:text-white group relative disabled:opacity-50 disabled:cursor-not-allowed"
               title="Export to PDF"
             >
               <span className="material-symbols-outlined text-xl">picture_as_pdf</span>
             </button>
-            <button 
+            <button
               onClick={handleExportCSV}
               disabled={selectedCount === 0}
-              className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" 
+              className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               title="Export to CSV"
             >
               <span className="material-symbols-outlined text-xl">csv</span>

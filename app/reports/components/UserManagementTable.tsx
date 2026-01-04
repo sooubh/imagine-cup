@@ -4,9 +4,26 @@ import { useState } from 'react';
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 
 const MOCK_USERS = [
-  {id: 1, name: "Sarah Chen", email: "sarah.c@gov.org", role: "Super Admin", region: "Central HQ", lastActive: "Just now", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn26oqo047ja6eRDdHXe70qNoLHYZun4HY7kzefaIeRDZsQ3fe059pCOXftUCtWdtcMk10sSuNykTv_YHgJEMelKbGYpRsgfRXFw6FC5vEZyqcquPdrWeIWmxREWvqwqncuv-YR1aYLI9pqXezQU2kCXhw5DIoHZ3tTcG0jpA38B94_bwblNIhRNUJ0mY3wG74l6KTEdEvigFjDt6VU4pm50zFDlk3fDHrmgSVcDPSJf1mu5wWFGH5fkGZ2RYJgoCnLH95GepSG1Q"},
-  {id: 2, name: "Marcus Johnson", email: "m.johnson@relief.org", role: "Logistician", region: "North District", lastActive: "2 hrs ago", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCsguqMDLgkUDeXcszRKwbCOctcIaLcBSmotdtmAFE3MrXIXkW6tICh0XTn-3LjQvtyl_LF9SEN59qO0BP0lxE9_RoRaW4-gVD8UV4rlHQimNI1LaokSr_hrJTBPi0nZvQswWxIb1CK9SIbQZwOL8eaVvj9qfc63EGxIssIchTvh5M4RkH4FaX6mviy7rAZb2OWfvW4J4Xv-cxRA8NfsnHwnYlewu-KsAlemhjSioarYIrk97kJDwWpoD3PH8L2ApFHtzl4W3hulM0"},
-  {id: 3, name: "Priya Patel", email: "priya.p@health.gov", role: "Viewer", region: "East Region", lastActive: "Yesterday", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDfgxh5pLac9NLXFYI3oBTOSJ7T8yyYjGexx08fdW6l-SxmkU6E_YP9x1BhJ2_Oa0m-hlO2-3pX8eF-wmGValRI1ajAy1lZUwpJ1did0fd8obtNMvI-uxOr09fW0InJzzTtXZ_DoditKlxaCeCE45bnJaX0bKLjhzKzp9QuVxQzqC5hXZm6Li08BbJEIa9TuE4ENDbV3vWTblxBmsxpthzgIjBoNwhyvNFi_KSWXNt8xr9OUNLdDOZNj-zKYBlHzcAk15WnAcajTQM"},
+  { id: 1, name: 'Sarah Chen', email: 'sarah.chen@example.com', role: 'Regional Manager', region: 'New York, USA', lastActive: '10 mins ago', avatar: 'https://i.pravatar.cc/150?u=1' },
+  { id: 2, name: 'Marcus Johnson', email: 'marcus.j@example.com', role: 'Store Manager', region: 'London, UK', lastActive: '25 mins ago', avatar: 'https://i.pravatar.cc/150?u=2' },
+  { id: 3, name: 'Priya Patel', email: 'priya.patel@example.com', role: 'Logistics Coord', region: 'Mumbai, India', lastActive: '1 hour ago', avatar: 'https://i.pravatar.cc/150?u=3' },
+  { id: 4, name: 'David Kim', email: 'david.kim@example.com', role: 'Sales Lead', region: 'Seoul, Korea', lastActive: '5 mins ago', avatar: 'https://i.pravatar.cc/150?u=4' },
+  { id: 5, name: 'Elena Rodriguez', email: 'elena.r@example.com', role: 'Inventory Spec', region: 'Madrid, Spain', lastActive: '3 hours ago', avatar: 'https://i.pravatar.cc/150?u=5' },
+  { id: 6, name: 'James Wilson', email: 'james.w@example.com', role: 'District Manager', region: 'Sydney, Australia', lastActive: 'Just now', avatar: 'https://i.pravatar.cc/150?u=6' },
+  { id: 7, name: 'Lisa Chang', email: 'lisa.chang@example.com', role: 'Ops Manager', region: 'Singapore', lastActive: '15 mins ago', avatar: 'https://i.pravatar.cc/150?u=7' },
+  { id: 8, name: 'Robert Fox', email: 'robert.fox@example.com', role: 'Retail Assoc', region: 'Toronto, Canada', lastActive: '2 mins ago', avatar: 'https://i.pravatar.cc/150?u=8' },
+  { id: 9, name: 'Emily Davis', email: 'emily.d@example.com', role: 'Analyst', region: 'Berlin, Germany', lastActive: '40 mins ago', avatar: 'https://i.pravatar.cc/150?u=9' },
+  { id: 10, name: 'Michael Brown', email: 'm.brown@example.com', role: 'Store Lead', region: 'Chicago, USA', lastActive: '50 mins ago', avatar: 'https://i.pravatar.cc/150?u=10' },
+  { id: 11, name: 'Kessi Irvin', email: 'kessi.i@example.com', role: 'Supply Chain', region: 'Cape Town, SA', lastActive: '12 mins ago', avatar: 'https://i.pravatar.cc/150?u=11' },
+  { id: 12, name: 'Tom Hiddleston', email: 'tom.h@example.com', role: 'Regional Dir', region: 'London, UK', lastActive: '2 hours ago', avatar: 'https://i.pravatar.cc/150?u=12' },
+  { id: 13, name: 'Anna Karenina', email: 'anna.k@example.com', role: 'HR BP', region: 'Moscow, Russia', lastActive: '5 hours ago', avatar: 'https://i.pravatar.cc/150?u=13' },
+  { id: 14, name: 'Bruce Wayne', email: 'bruce.w@example.com', role: 'Security Head', region: 'Gotham, USA', lastActive: 'Just now', avatar: 'https://i.pravatar.cc/150?u=14' },
+  { id: 15, name: 'Diana Prince', email: 'diana.p@example.com', role: 'Marketing Lead', region: 'Paris, France', lastActive: '1 hour ago', avatar: 'https://i.pravatar.cc/150?u=15' },
+  { id: 16, name: 'Clark Kent', email: 'clark.k@example.com', role: 'Compliance', region: 'Metropolis, USA', lastActive: '30 mins ago', avatar: 'https://i.pravatar.cc/150?u=16' },
+  { id: 17, name: 'Natasha Romanoff', email: 'natasha.r@example.com', role: 'Risk Manager', region: 'Budapest, Hungary', lastActive: '5 mins ago', avatar: 'https://i.pravatar.cc/150?u=17' },
+  { id: 18, name: 'Tony Stark', email: 'tony.s@example.com', role: 'Tech Lead', region: 'Malibu, USA', lastActive: 'Just now', avatar: 'https://i.pravatar.cc/150?u=18' },
+  { id: 19, name: 'Steve Rogers', email: 'steve.r@example.com', role: 'Team Lead', region: 'Brooklyn, USA', lastActive: '45 mins ago', avatar: 'https://i.pravatar.cc/150?u=19' },
+  { id: 20, name: 'Peter Parker', email: 'peter.p@example.com', role: 'Intern', region: 'Queens, USA', lastActive: '10 mins ago', avatar: 'https://i.pravatar.cc/150?u=20' },
 ];
 
 export function UserManagementTable() {
@@ -15,14 +32,14 @@ export function UserManagementTable() {
   const [showActionsMenu, setShowActionsMenu] = useState<number | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
 
-  const filteredUsers = MOCK_USERS.filter(u => 
+  const filteredUsers = MOCK_USERS.filter(u =>
     u.name.toLowerCase().includes(filterText.toLowerCase()) ||
     u.email.toLowerCase().includes(filterText.toLowerCase()) ||
     u.region.toLowerCase().includes(filterText.toLowerCase())
   );
 
   const handleExport = (type: 'csv' | 'pdf') => {
-    const users = filteredUsers.map(({avatar, ...rest}) => rest);
+    const users = filteredUsers.map(({ avatar, ...rest }) => rest);
     if (type === 'csv') {
       exportToCSV(users, 'team_members');
     } else {
@@ -59,9 +76,9 @@ export function UserManagementTable() {
             </button>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-500 text-[18px]">search</span>
-              <input 
-                className="h-9 pl-9 pr-4 rounded-full bg-white dark:bg-[#23220f] border border-neutral-200 dark:border-neutral-700 text-sm focus:ring-primary focus:border-primary text-neutral-dark dark:text-white placeholder-neutral-500" 
-                placeholder="Filter users" 
+              <input
+                className="h-9 pl-9 pr-4 rounded-full bg-white dark:bg-[#23220f] border border-neutral-200 dark:border-neutral-700 text-sm focus:ring-primary focus:border-primary text-neutral-dark dark:text-white placeholder-neutral-500"
+                placeholder="Filter users"
                 type="text"
                 value={filterText}
                 onChange={(e) => setFilterText(e.target.value)}
@@ -89,7 +106,7 @@ export function UserManagementTable() {
                   <tr key={user.id} className="hover:bg-neutral-50 dark:hover:bg-black/20 transition-colors">
                     <td className="p-5">
                       <div className="flex items-center gap-3">
-                        <div className="bg-center bg-cover size-8 rounded-full" style={{backgroundImage: `url('${user.avatar}')`}}></div>
+                        <div className="bg-center bg-cover size-8 rounded-full" style={{ backgroundImage: `url('${user.avatar}')` }}></div>
                         <div>
                           <p className="text-sm font-bold text-neutral-dark dark:text-white">{user.name}</p>
                           <p className="text-xs text-neutral-500">{user.email}</p>
@@ -97,11 +114,10 @@ export function UserManagementTable() {
                       </div>
                     </td>
                     <td className="p-5">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        user.role === 'Super Admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' :
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${user.role === 'Super Admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' :
                         user.role === 'Logistician' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                        'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
-                      }`}>
+                          'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
+                        }`}>
                         {user.role}
                       </span>
                     </td>
@@ -133,9 +149,7 @@ export function UserManagementTable() {
               </tbody>
             </table>
           </div>
-          <div className="bg-background-light dark:bg-black/20 p-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-center">
-            <button className="text-sm font-bold text-neutral-500 hover:text-neutral-dark dark:hover:text-white transition-colors">View All 42 Users</button>
-          </div>
+
         </div>
       </section>
 

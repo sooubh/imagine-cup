@@ -3,7 +3,7 @@ import { SYSTEM_PROMPT } from "@/lib/aiContext";
 
 // Interface for AI response
 export interface StockInsight {
-    sentiment: "positive" | "negative" | "neutral" | "critical";
+    sentiment: "positive" | "negative" | "neutral" | "critical" | "warning";
     summary: string;
     actionableSuggestion: string;
     affectedItems?: string[];
@@ -46,11 +46,24 @@ export class AzureAIService {
     }
 
     // Generate a quick insight for the dashboard banner
-    async getDashboardInsight(inventoryCtx: string): Promise<StockInsight> {
+    async getDashboardInsight(inventoryCtx: string | any[]): Promise<StockInsight> {
         if (!this.client) this.initializeClient();
 
+        let contextString = "";
+        if (Array.isArray(inventoryCtx)) {
+            contextString = inventoryCtx.map(i => {
+                let statusTag = '';
+                if (i.quantity <= (i.minQuantity || 10)) statusTag = '[CRITICAL]';
+                else if (i.quantity < 50) statusTag = '[Low]';
+                if (i.expiryDate && new Date(i.expiryDate) < new Date()) statusTag += ' [EXPIRED]';
+                return `- ${i.name}: ${i.quantity} units ${statusTag}`;
+            }).join('\n');
+        } else {
+            contextString = inventoryCtx;
+        }
+
         if (!this.client) {
-            return this.generateOfflineInsight(inventoryCtx);
+            return this.generateOfflineInsight(contextString);
         }
 
         try {
@@ -65,7 +78,7 @@ export class AzureAIService {
             3. "Overstock" -> Suggest Sale/Promotion.
             
             Data Snapshot:
-            ${inventoryCtx.substring(0, 5000)} ... (truncated if long)
+            ${contextString.substring(0, 5000)} ... (truncated if long)
 
             Return JSON:
             {
@@ -94,7 +107,86 @@ export class AzureAIService {
 
         } catch (error) {
             console.error("Azure AI Error:", error);
-            return this.generateOfflineInsight(inventoryCtx);
+            return this.generateOfflineInsight(contextString);
+        }
+    }
+
+    async getWasteAnalysis(inventoryItems: any[]): Promise<StockInsight> {
+        if (!this.client) this.initializeClient();
+
+        // Filter for risky items to save tokens
+        const riskyItems = inventoryItems.filter(i => {
+            if (!i.expiryDate) return false;
+            const daysToExpiry = Math.ceil((new Date(i.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            return daysToExpiry < 60; // Check items expiring in next 60 days or already expired
+        }).map(i => `${i.name} (${i.quantity} units) - Expires in ${Math.ceil((new Date(i.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days`);
+
+        if (riskyItems.length === 0) {
+            return {
+                sentiment: "positive",
+                summary: "No immediate waste risks detected.",
+                actionableSuggestion: "Continue monitoring expiry dates safely.",
+                affectedItems: []
+            };
+        }
+
+        const contextString = riskyItems.join('\n');
+
+        if (!this.client) {
+            return {
+                sentiment: "warning",
+                summary: `${riskyItems.length} items are nearing expiry or expired.`,
+                actionableSuggestion: "Review the expiry list and discount items expiring soon.",
+                affectedItems: [] // Can't easily parse back in offline mode without logic
+            };
+        }
+
+        try {
+            const prompt = `
+            You are a Sustainability & Waste Reduction Expert.
+            Analyze these items nearing expiry and suggest the best waste reduction strategy.
+            
+            Options:
+            - "Discount" for items expiring in 30-60 days.
+            - "Donate" for items expiring in 7-30 days.
+            - "Dispose" for expired items.
+
+            Items:
+            ${contextString}
+
+            Return JSON:
+            {
+                "sentiment": "warning" | "critical",
+                "summary": "Key insight about wastage risk (e.g. 'High risk of medicine wastage')",
+                "actionableSuggestion": "Specific action (e.g. 'Run 50% off sale for [Item]')",
+                "affectedItems": ["Item 1", "Item 2"]
+            }
+            `;
+
+            const completion = await this.client.chat.completions.create({
+                messages: [
+                    { role: "system", content: "You are a waste management expert. JSON output only." },
+                    { role: "user", content: prompt }
+                ],
+                model: this.deploymentName,
+                response_format: { type: "json_object" },
+                temperature: 0.3,
+            });
+
+            const content = completion.choices[0].message.content;
+            if (content) {
+                return JSON.parse(content) as StockInsight;
+            }
+            throw new Error("Empty response from AI");
+
+        } catch (error) {
+            console.error("Azure AI Waste Analysis Error:", error);
+            return {
+                sentiment: "neutral",
+                summary: "Ai Service Unavailable for Waste Analysis",
+                actionableSuggestion: "Manually review expiring items.",
+                affectedItems: []
+            };
         }
     }
 

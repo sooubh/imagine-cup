@@ -6,8 +6,8 @@ import { notFound } from 'next/navigation';
 import { ItemHeaderActions } from '../components/ItemHeaderActions';
 
 type Props = {
-    params: Promise<{ itemId: string }>;
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: Promise<{ itemId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function ItemPage({ params, searchParams }: Props) {
@@ -16,16 +16,16 @@ export default async function ItemPage({ params, searchParams }: Props) {
   const section = typeof resolvedSearchParams.section === 'string' ? resolvedSearchParams.section : undefined;
 
   if (!section) {
-      // Handle missing section gracefully, maybe redirect or show error?
-      // For now, let's try to find it or just error.
-      // Since our new URL structure REQUIRES section, we can assume it's there or 404.
-      return <div className="p-10 text-center">Missing Section Parameter</div>;
+    // Handle missing section gracefully, maybe redirect or show error?
+    // For now, let's try to find it or just error.
+    // Since our new URL structure REQUIRES section, we can assume it's there or 404.
+    return <div className="p-10 text-center">Missing Section Parameter</div>;
   }
 
   const item = await azureService.getItem(itemId, section);
 
   if (!item) {
-      notFound();
+    notFound();
   }
 
   return (
@@ -110,7 +110,7 @@ export default async function ItemPage({ params, searchParams }: Props) {
 
           {/* Right Panel: Risk Explanation & AI Insight */}
           <div className="lg:col-span-3 flex flex-col gap-6">
-            <RiskAssessmentCard />
+            <RiskAssessmentCard item={item} />
           </div>
         </div>
       </main>

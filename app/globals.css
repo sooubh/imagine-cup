@@ -65,3 +65,14 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #525252; /* neutral-600 */
 }
+
+/* Hide header/navbar when modal is open */
+html.modal-open nav,
+html.modal-open header,
+html.modal-open [role="banner"] {
+  display: none !important;
+}
+
+html.modal-open body {
+  overflow: hidden;
+}
