@@ -219,7 +219,7 @@ export default function StoresManagementPage() {
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500 font-medium">Total Value</span>
-                                    <span className="font-bold text-slate-800 dark:text-white">₹{((store as any).totalValue || 0).toLocaleString()}</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">${((store as any).totalValue || 0).toLocaleString()}</span>
                                 </div>
                             </div>
 

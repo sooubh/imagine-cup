@@ -153,7 +153,7 @@ export function InventoryReport({ items, isLoading }: InventoryReportProps) {
                                         <p className="font-bold text-sm">{item.name}</p>
                                         <p className="text-xs text-neutral-400">{item.quantity} units @ ${item.price}</p>
                                     </div>
-                                    <div className="font-mono font-bold">₹{(item.quantity * item.price).toFixed(2)}</div>
+                                    <div className="font-mono font-bold">${(item.quantity * item.price).toFixed(2)}</div>
                                 </div>
                             ))}
                         </div>

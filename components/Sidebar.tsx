@@ -18,7 +18,8 @@ const navItems: NavItem[] = [
     href: '/dashboard',
     icon: Home,
     subItems: [
-      { name: 'Inventory', href: '/stocks' }
+      { name: 'Inventory', href: '/stocks' },
+      { name: 'Insights', href: '/insights' }
     ]
   },
   { name: 'Sales', href: '/sales', icon: CreditCard },

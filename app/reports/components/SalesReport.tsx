@@ -93,7 +93,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
                      <p className="text-neutral-500 text-sm mb-1">Total Revenue</p>
-                     <h3 className="text-3xl font-black text-neutral-dark dark:text-white">₹{totalRevenue.toFixed(2)}</h3>
+                     <h3 className="text-3xl font-black text-neutral-dark dark:text-white">${totalRevenue.toFixed(2)}</h3>
                      <p className="text-xs text-green-600 mt-1">+12% from last month</p>
                  </div>
                  <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
@@ -103,7 +103,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                  </div>
                  <div className="bg-white dark:bg-[#23220f] p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
                      <p className="text-neutral-500 text-sm mb-1">Avg. Order Value</p>
-                     <h3 className="text-3xl font-black text-neutral-dark dark:text-white">₹{avgOrderValue.toFixed(2)}</h3>
+                     <h3 className="text-3xl font-black text-neutral-dark dark:text-white">${avgOrderValue.toFixed(2)}</h3>
                      <p className="text-xs text-purple-600 mt-1">per transaction</p>
                  </div>
             </div>
@@ -127,7 +127,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                         <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
                         <RechartsTooltip 
                             contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                            formatter={(value) => `₹${value}`}
+                            formatter={(value) => `$${value}`}
                         />
                         <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
                     </AreaChart>
@@ -157,7 +157,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Pie>
-                            <RechartsTooltip formatter={(value) => `₹${value}`} />
+                            <RechartsTooltip formatter={(value) => `$${value}`} />
                             <RechartsLegend />
                         </PieChart>
                     </ResponsiveContainer>
@@ -176,7 +176,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                             <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
                             <RechartsTooltip 
                                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                                formatter={(value) => `₹${value}`}
+                                formatter={(value) => `$${value}`}
                             />
                             <Bar dataKey="value" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
                         </BarChart>
@@ -216,7 +216,7 @@ export function SalesReport({ transactions, isLoading }: SalesReportProps) {
                                     </td>
                                     <td className="py-3 px-4 text-sm text-neutral-500">{t.items.length} items</td>
                                     <td className="py-3 px-4 text-sm">{t.paymentMethod}</td>
-                                    <td className="py-3 px-4 text-right font-bold">₹{t.totalAmount.toFixed(2)}</td>
+                                    <td className="py-3 px-4 text-right font-bold">${t.totalAmount.toFixed(2)}</td>
                                 </tr>
                             ))}
                         </tbody>

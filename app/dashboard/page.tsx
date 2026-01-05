@@ -6,6 +6,9 @@ import { StoreHealthOverview } from './components/StoreHealthOverview';
 import { AlertsSidebar } from './components/AlertsSidebar';
 import { RecentActivityFeed } from './components/RecentActivityFeed';
 import { StockHeatmapTable } from './components/StockHeatmapTable';
+import { QuickActionsPanel } from './components/QuickActionsPanel';
+import { TrendingInsights } from './components/TrendingInsights';
+import { TipsAndSuggestions } from './components/TipsAndSuggestions';
 import { azureService } from '@/lib/azureDefaults';
 import { getUser } from '@/lib/auth';
 import { getStockStatus } from './lib/utils';
@@ -98,6 +101,21 @@ export default async function DashboardPage() {
             <RecentActivityFeed activities={recentActivities} />
           </div>
         </div>
+
+        {/* Key Metrics Section */}
+        <Suspense fallback={<div className="h-64 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-3xl" />}>
+          <TrendingInsights items={myItems} />
+        </Suspense>
+
+        {/* Quick Actions Panel */}
+        <Suspense fallback={<div className="h-64 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-3xl" />}>
+          <QuickActionsPanel />
+        </Suspense>
+
+        {/* Tips & Suggestions */}
+        <Suspense fallback={<div className="h-64 animate-pulse bg-neutral-100 dark:bg-neutral-800 rounded-3xl" />}>
+          <TipsAndSuggestions items={myItems} />
+        </Suspense>
       </div>
     </div>
   );

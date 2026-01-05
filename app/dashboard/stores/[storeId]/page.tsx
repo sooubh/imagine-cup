@@ -141,7 +141,7 @@ export default function StoreInventoryPage() {
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Item Name</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Category</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stock</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Price (₹)</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Price ($)</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
                                 </tr>
@@ -161,7 +161,7 @@ export default function StoreInventoryPage() {
                                         <td className="px-6 py-4 font-mono text-slate-700 dark:text-slate-300">
                                             {item.quantity} <span className="text-slate-400 text-xs">{item.unit}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">₹{item.price}</td>
+                                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">${item.price}</td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium border ${item.quantity <= 10
                                                     ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-900/50'
@@ -245,7 +245,7 @@ export default function StoreInventoryPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Price (₹)</label>
+                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Price ($)</label>
                                     <input
                                         type="number"
                                         value={newItem.price}

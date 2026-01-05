@@ -338,7 +338,7 @@ export async function chatWithLedgerBot(messages: { role: 'user' | 'bot' | 'syst
                         const revenue = transactions
                             .filter(t => t.type === 'SALE')
                             .reduce((sum, t) => sum + t.totalAmount, 0);
-                        toolResult = `**Total Revenue (Recent):** ₹${revenue.toLocaleString()}`;
+                        toolResult = `**Total Revenue (Recent):** $${revenue.toLocaleString()}`;
                     }
                 }
                 else if (fnName === "navigate_to_page") {
