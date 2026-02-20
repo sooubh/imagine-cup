@@ -1236,19 +1236,6 @@ We welcome contributions from the community!
 - Azure integration
 - AI implementation
 
-**Sahil Sarode**  
-*Frontend Developer & UI/UX Designer*  
-- User interface design
-- Component development
-- Animation & interactions
-- User experience optimization
-
-**Sneha Darade**  
-*Backend Developer & Data Analyst*  
-- Database design
-- API development
-- Data modeling
-- Analytics implementation
 
 ### Contact
 
